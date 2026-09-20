@@ -1,0 +1,1448 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0B3B25">
+<title>Yerbabonita</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Yerbabonita">
+<style>
+  :root{
+    --turf:#0B3B25;
+    --turf-soft:#124A2F;
+    --paper:#F4F0E2;
+    --paper-alt:#EBE5D2;
+    --ink:#1C2B22;
+    --muted:#7C7767;
+    --line:#D6CDB4;
+    --under:#A3221B;
+    --over:#0B3B25;
+    --gold:#C8A951;
+    --num: ui-sans-serif, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0 auto;max-width:560px;
+    padding:calc(18px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right))
+            calc(34px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+    background:var(--turf);color:var(--ink);
+    font-family:Georgia,"Times New Roman",serif;
+    -webkit-tap-highlight-color:transparent;
+  }
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+  h1{margin:0;font-size:27px;font-weight:400;letter-spacing:.01em;color:var(--paper)}
+  .sub{margin-top:2px;font-size:13px;color:#A9BFAF;font-style:italic}
+  .switch{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;flex:none;padding-bottom:3px}
+  .switch span{font-size:12px;color:#A9BFAF;font-family:var(--num)}
+  .track{width:38px;height:21px;border:1px solid #4C6E5C;border-radius:11px;position:relative;transition:background .15s}
+  .knob{position:absolute;top:2px;left:2px;width:15px;height:15px;border-radius:50%;background:#A9BFAF;transition:transform .15s,background .15s}
+  [data-totals="on"] .track{background:var(--gold);border-color:var(--gold)}
+  [data-totals="on"] .knob{transform:translateX(17px);background:var(--turf)}
+  .switch input{position:absolute;opacity:0;width:0;height:0}
+  .switch input:focus-visible + .track{outline:2px solid var(--gold);outline-offset:2px}
+
+  .card{background:var(--paper);border-radius:2px;padding:8px 8px 4px;box-shadow:0 1px 0 rgba(0,0,0,.25)}
+  .row{display:grid;align-items:stretch;border-bottom:1px solid var(--line)}
+  .row.head{border-bottom:2px solid var(--turf)}
+  .row.par4{background:var(--paper-alt)}
+  .row.total{border-bottom:none;border-top:2px solid var(--turf);margin-top:2px}
+  .row.vspar{border-bottom:none}
+  .cell{padding:4px 2px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+  .cell.lbl{font-family:var(--num);font-size:11px;color:var(--muted);letter-spacing:.03em}
+
+  .hole{font-family:var(--num);font-size:15px;color:var(--ink)}
+  .head .hole,.head .parbox{font-size:11px;color:var(--muted)}
+  input{font-family:var(--num);background:transparent;border:none;color:var(--ink);text-align:center;width:100%;padding:0;font-variant-numeric:tabular-nums}
+  input:focus{outline:none}
+  input:focus-visible{outline:2px solid var(--gold);outline-offset:1px;border-radius:2px}
+  .name{font-size:16px;padding:5px 0 6px;border-bottom:1px solid var(--line);font-family:Georgia,serif}
+  .name::placeholder{color:#B3AC96;font-style:italic}
+  .parbox{font-size:14px;color:var(--muted)}
+  .score{font-size:19px;height:34px;line-height:34px}
+  .score::placeholder{color:#CFC7AF}
+  .sub{font-family:var(--num);font-size:11px;letter-spacing:.02em;color:var(--muted);white-space:nowrap;margin-top:-3px}
+  .sub b{font-weight:600}
+  .u{color:var(--under)}.o{color:var(--over)}.e{color:var(--muted)}
+  .tot{font-family:var(--num);font-size:18px;font-weight:600}
+  .vspar .cell{padding-top:0}
+  .vsval{font-family:var(--num);font-size:13px;font-weight:600}
+
+  .gaps{border-top:1px solid var(--line);margin-top:6px;padding:8px 2px 6px;font-size:13px;line-height:1.5;color:var(--ink)}
+  .gaps em{font-style:normal;color:var(--muted)}
+  .gaps .lead{color:var(--under);font-weight:600;font-family:Georgia,serif}
+
+  [data-totals="off"] .sub,[data-totals="off"] .total,[data-totals="off"] .vspar,[data-totals="off"] .gaps{display:none}
+  [data-totals="off"] .row:last-of-type{border-bottom:none}
+
+  .actions{display:flex;gap:8px;margin-top:14px}
+  button{
+    flex:1;font-family:var(--num);font-size:13px;padding:10px 6px;
+    background:transparent;color:#CFDDD3;border:1px solid #3F614F;border-radius:2px;cursor:pointer;
+  }
+  button:active{background:var(--turf-soft)}
+  button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .danger{color:#E8B4AE;border-color:#6B3B36}
+  .note{margin-top:12px;font-size:11.5px;color:#7E9689;text-align:center;font-family:var(--num)}
+
+  header .sub{margin-top:2px;font-size:13px;color:#A9BFAF;font-family:Georgia,"Times New Roman",serif;font-style:italic;letter-spacing:0}
+  /* ---- Pestañas ---- */
+  .tabs{display:flex;gap:0;margin-bottom:12px;border:1px solid #3F614F;border-radius:2px;overflow:hidden}
+  .tabs button{flex:1;border:none;border-radius:0;padding:11px 6px;font-size:14px;color:#A9BFAF;background:transparent}
+  .tabs button + button{border-left:1px solid #3F614F}
+  .tabs button[aria-selected="true"]{background:var(--paper);color:var(--turf);font-weight:600}
+  .tabs button[aria-selected="true"]:active{background:var(--paper)}
+  [data-tab="hoyos"] .switch,[data-tab="perfil"] .switch,[data-tab="partidas"] .switch{display:none}
+  .panel[hidden]{display:none}
+
+  /* ---- Info de hoyos ---- */
+  .tees{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+  .tees button.tee{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 2px;color:#CFDDD3;border-color:#3F614F}
+  .tee .dot{width:14px;height:14px;border-radius:50%;border:1px solid rgba(255,255,255,.5)}
+  .tee .tn{font-size:12px}
+  .tee .tt{font-size:11px;color:#A9BFAF;font-variant-numeric:tabular-nums}
+  .tees button.tee[aria-pressed="true"]{background:var(--paper);border-color:var(--paper);color:var(--turf);font-weight:600}
+  .tees button.tee[aria-pressed="true"] .tt{color:var(--muted)}
+  .tees button.tee[aria-pressed="true"] .dot{border-color:rgba(0,0,0,.35)}
+  .hi-row{display:grid;grid-template-columns:2.6rem 1fr 1fr 1.4fr;align-items:center;border-bottom:1px solid var(--line);font-family:var(--num);font-variant-numeric:tabular-nums;text-align:center}
+  .hi-row > div{padding:9px 2px;font-size:16px}
+  .hi-row.par4{background:var(--paper-alt)}
+  .hi-row.hi-head{border-bottom:2px solid var(--turf)}
+  .hi-head > div{font-size:11px;color:var(--muted);letter-spacing:.03em;padding:6px 2px}
+  .hi-row.hi-total{border-bottom:none;border-top:2px solid var(--turf);margin-top:2px}
+  .hi-row.hi-total > div{font-weight:600}
+  .hi-dist{font-size:19px !important;font-weight:600}
+  .hi-mute{color:var(--muted)}
+
+  /* ---- Perfil ---- */
+  .pf-field{padding:10px 4px 6px}
+  .pf-field label{display:block;font-family:var(--num);font-size:12px;color:var(--muted);letter-spacing:.03em;margin-bottom:2px}
+  input.pf-input{text-align:left;font-size:22px;padding:6px 0 8px;border-bottom:1px solid var(--line);font-family:Georgia,serif}
+  input.pf-input::placeholder{color:#B3AC96;font-style:italic}
+  .hcpTag{font-family:var(--num);font-size:11px;color:var(--muted);margin-top:1px}
+
+  /* ---- Ronda compartida ---- */
+  .rb{margin-bottom:12px}
+  .rb[hidden],.changes[hidden]{display:none}
+  .rb-t{font-family:Georgia,serif;font-size:17px;color:var(--paper)}
+  .rb-d{font-size:12.5px;color:#A9BFAF;margin:2px 0 8px;font-family:var(--num)}
+  .rb-row{display:flex;gap:8px;align-items:stretch}
+  input.rb-in{flex:1.1;width:auto;min-width:0;border:1px solid #3F614F;border-radius:2px;color:var(--paper);font-size:17px;letter-spacing:.25em;text-transform:uppercase;padding:8px 2px;text-indent:.25em}
+  input.rb-in::placeholder{color:#6F8C7B;letter-spacing:.1em;font-size:13px}
+  .rb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .rb-lab{font-family:var(--num);font-size:12px;color:#A9BFAF}
+  .rb-code{font-family:Georgia,serif;font-size:32px;letter-spacing:.22em;color:var(--paper);line-height:1.1}
+  .rb-st{font-family:var(--num);font-size:12px;color:#A9BFAF;text-align:right}
+  .rb-st.off{color:#E0A56B}
+  .rb-msg{font-family:var(--num);font-size:12.5px;color:#E0C27A;margin-top:6px}
+  .rb-msg:empty{display:none}
+  .changes{margin-top:14px;font-family:var(--num);font-size:13px;color:#A9BFAF}
+  .changes summary{cursor:pointer;padding:6px 0}
+  .changes .ch{padding:6px 0;border-top:1px solid #234F38;color:#CFDDD3;font-size:12.5px}
+
+  /* ---- Partida: 9 o 18 hoyos ---- */
+  .vdot{display:inline-block;width:10px;height:10px;border-radius:50%;border:1px solid rgba(255,255,255,.45);flex:none}
+  .card .vdot{border-color:rgba(0,0,0,.35)}
+  .gb{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;font-family:var(--num);font-size:13px;color:#CFDDD3}
+  .gb-l{display:flex;flex-wrap:wrap;align-items:center;gap:4px 12px}
+  .gb-tee{display:inline-flex;align-items:center;gap:6px}
+  .gb button{flex:none;padding:7px 10px;font-size:12px}
+  .gb:empty{display:none}
+  .vlabel{display:flex;align-items:center;gap:6px;padding:8px 4px 2px;font-family:var(--num);font-size:11px;letter-spacing:.04em;color:var(--muted);text-transform:uppercase}
+  .su{padding:6px 0 10px}
+  .su-t{font-family:Georgia,serif;font-size:24px;color:var(--paper);margin-bottom:4px}
+  .su-s{font-family:var(--num);font-size:13px;color:#A9BFAF;margin-bottom:14px}
+  .su-row{display:flex;gap:10px}
+  button.su-big{flex:1;padding:26px 8px;font-size:24px;font-family:Georgia,serif;color:var(--paper);background:var(--turf-soft);border-color:#4B7059}
+  .su .tees{margin-bottom:12px}
+  .su .tees button.tee{padding:16px 2px}
+  .su .tee .dot{width:24px;height:24px}
+  .su .tee .tn{font-size:13px}
+  .su-nav{display:flex;gap:8px;margin-top:6px}
+  .seg{display:flex;margin-bottom:10px;border:1px solid #3F614F;border-radius:2px;overflow:hidden}
+  .seg button{flex:1;border:none;border-radius:0;padding:9px 6px;font-size:13px;color:#A9BFAF;background:transparent}
+  .seg button + button{border-left:1px solid #3F614F}
+  .seg button[aria-pressed="true"]{background:var(--paper);color:var(--turf);font-weight:600}
+  .hi-row.nohcp{grid-template-columns:2.6rem 1fr 1.6fr}
+  .infogame{margin-bottom:10px}
+
+  /* ---- Logo ---- */
+  .sheet-box .gb{color:var(--ink);justify-content:flex-start;margin:0 0 10px}
+  .sheet-box .vdot{border-color:rgba(0,0,0,.35)}
+  .hcpTag:empty{display:none}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .brand img{width:52px;height:52px;flex:none;display:block}
+  /* ---- Guardar partida ---- */
+  button.savebtn{display:block;width:100%;flex:none;margin-top:14px;padding:15px 8px;font-size:15px;font-weight:600;letter-spacing:.02em;color:var(--turf);background:var(--gold);border-color:var(--gold)}
+  button.savebtn:active{background:#B79A47}
+  #play.fin .actions,#play.fin .savebtn{display:none}
+  #sheet{position:fixed;left:0;right:0;top:0;bottom:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-end;justify-content:center;z-index:50}
+  #sheet[hidden]{display:none}
+  .sheet-box{background:var(--paper);color:var(--ink);width:100%;max-width:520px;border-radius:14px 14px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));max-height:90%;overflow:auto;font-family:var(--num)}
+  .sh-t{font-family:Georgia,serif;font-size:23px;margin-bottom:2px}
+  .sh-s{font-size:13px;color:var(--muted);margin-bottom:10px}
+  .sh-list{margin:6px 0 10px}
+  .sh-r{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:7px 0;border-bottom:1px solid var(--line);font-size:15px}
+  .sh-r b{font-size:17px}
+  .sh-r em{font-style:normal;color:var(--muted);font-size:12px}
+  .sh-note{font-size:12.5px;color:var(--muted);margin:8px 0 4px;line-height:1.4}
+  .sh-warn{font-size:12.5px;color:#8A5A12;margin:8px 0 4px}
+  .sheet-box button{display:block;width:100%;flex:none;margin-top:8px;padding:14px 8px;font-size:14px;color:var(--turf);background:transparent;border:1px solid #CFC8B0}
+  .sheet-box button.prim{background:var(--turf);color:var(--paper);border-color:var(--turf);font-weight:600}
+  .sheet-box img.preview{display:block;width:100%;height:auto;border-radius:4px;border:1px solid var(--line)}
+  .sheet-box a.dl{display:block;text-align:center;margin-top:8px;padding:14px 8px;font-size:14px;color:var(--turf);border:1px solid #CFC8B0;border-radius:2px;text-decoration:none}
+  #toast{pointer-events:none;position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--paper);color:var(--turf);font-family:var(--num);font-size:14px;padding:11px 16px;border-radius:22px;box-shadow:0 4px 18px rgba(0,0,0,.4);z-index:60;max-width:88%;text-align:center}
+  #toast[hidden]{display:none}
+  .rb-fin{font-family:var(--num);font-size:13px;color:#E0C27A;margin:12px 0 8px;line-height:1.4}
+  .rb > button{display:block;width:100%;flex:none}
+  /* ---- Partidas guardadas ---- */
+  .hcard{margin-bottom:12px;padding:12px 14px}
+  .hc-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+  .hc-date{font-family:Georgia,serif;font-size:17px}
+  .hc-tag{font-family:var(--num);font-size:11px;color:var(--muted);text-align:right}
+  .hcard .gb{color:var(--ink);margin:4px 0 6px;justify-content:flex-start}
+  .hcard .vdot{border-color:rgba(0,0,0,.35)}
+  .hc-rank{font-family:var(--num);border-top:1px solid var(--line);margin-top:4px}
+  .hc-acts{display:flex;gap:8px;margin-top:10px}
+  .hcard .hc-acts button{padding:9px 4px;font-size:12.5px;color:var(--turf);border-color:#CFC8B0}
+  .hcard .hc-acts button.del{color:#9A3B31;border-color:#D9B9B4;flex:.6}
+  .hd{margin-top:10px;font-family:var(--num);font-variant-numeric:tabular-nums}
+  .hd-row{display:grid;align-items:center;text-align:center;border-bottom:1px solid var(--line);font-size:14px}
+  .hd-row > div{padding:5px 2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hd-row.h{font-size:11px;color:var(--muted);border-bottom:2px solid var(--turf)}
+  .hd-row.p4{background:var(--paper-alt)}
+  .hd-row.t{font-weight:600;border-top:2px solid var(--turf);border-bottom:none}
+  .hd-lab{font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);padding:8px 2px 2px;display:flex;align-items:center;gap:6px}
+</style>
+</head>
+<body data-totals="on" data-tab="hoyos">
+
+<header>
+  <div class="brand">
+    <img id="logo" alt="Yerbabonita Bosque Nativo" width="52" height="52">
+    <div>
+      <h1>Yerbabonita</h1>
+      <div class="sub" id="subtitle">9 hoyos, par 29</div>
+    </div>
+  </div>
+  <label class="switch">
+    <input type="checkbox" id="tg" checked>
+    <span class="track"><span class="knob"></span></span>
+    <span>Totales</span>
+  </label>
+</header>
+
+<div class="tabs" role="tablist">
+  <button role="tab" id="tb-hoyos" aria-selected="true" aria-controls="tab-hoyos" data-tab="hoyos">Hoyos</button>
+  <button role="tab" id="tb-tarjeta" aria-selected="false" aria-controls="tab-tarjeta" data-tab="tarjeta">Tarjeta</button>
+  <button role="tab" id="tb-partidas" aria-selected="false" aria-controls="tab-partidas" data-tab="partidas">Partidas</button>
+  <button role="tab" id="tb-perfil" aria-selected="false" aria-controls="tab-perfil" data-tab="perfil">Perfil</button>
+</div>
+
+<section class="panel" id="tab-hoyos" role="tabpanel" aria-labelledby="tb-hoyos">
+  <div class="gb infogame" id="infogame"></div>
+  <div class="tees" id="tees"></div>
+  <div class="seg" id="halfs"></div>
+  <div class="card" id="info"></div>
+  <div class="note" id="infonote"></div>
+</section>
+
+<section class="panel" id="tab-tarjeta" role="tabpanel" aria-labelledby="tb-tarjeta" hidden>
+<div class="rb" id="roundbar" hidden></div>
+<div id="setup" hidden></div>
+<div id="play">
+  <div class="gb" id="gamebar"></div>
+  <div id="playbody">
+  <div class="card" id="card"></div>
+  <button class="savebtn" id="save" type="button">Guardar partida</button>
+
+  <div class="actions">
+    <button id="less">Quitar jugador</button>
+    <button id="more">Agregar jugador</button>
+  </div>
+  <div class="actions">
+    <button class="danger" id="clear">Limpiar tarjeta</button>
+  </div>
+  <details class="changes" id="changes" hidden>
+    <summary>Cambios recientes</summary>
+    <div id="chlist"></div>
+  </details>
+  <div class="note" id="tnote">Se guarda solo en este celular, aunque cierres la página.</div>
+  </div>
+</div>
+</section>
+
+<section class="panel" id="tab-partidas" role="tabpanel" aria-labelledby="tb-partidas" hidden>
+  <div id="histlist"></div>
+</section>
+
+<section class="panel" id="tab-perfil" role="tabpanel" aria-labelledby="tb-perfil" hidden>
+  <div class="card">
+    <div class="pf-field">
+      <label for="pf-name">Nombre</label>
+      <input class="pf-input" id="pf-name" type="text" placeholder="Tu nombre" autocomplete="off" autocapitalize="words" maxlength="30">
+    </div>
+    <div class="pf-field">
+      <label for="pf-hcp">Handicap</label>
+      <input class="pf-input" id="pf-hcp" type="text" inputmode="numeric" maxlength="2" placeholder="Sin handicap">
+    </div>
+  </div>
+  <div class="note">Este jugador aparece siempre de primero en tu tarjeta. En una ronda compartida, tu nombre es el que ven los demás y el que aparece en "Cambios recientes". Con handicap, al terminar todos los hoyos verás tu neto.</div>
+</section>
+
+<div id="sheet" hidden></div>
+<div id="toast" hidden></div>
+
+<script>
+(function(){
+  /* ========== CONFIGURACIÓN DE SUPABASE ==========
+     Pega aquí los dos datos de tu proyecto (Project Settings → API).
+     Si los dejas vacíos, la app funciona solo en este celular. */
+  var CFG={
+    url:'https://gquhmgvicgngpfmvatbr.supabase.co',   // ejemplo: 'https://abcdxyz.supabase.co'
+    key:'sb_publishable_yaLB43wKqnY5qv8AYWYDdA_oVbkCxBY'    // la clave "anon" o "publishable" (NUNCA la "service_role")
+  };
+  /* =============================================== */
+
+  var LOGO_URI='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAMAAAADACAMAAABlApw1AAABMmlDQ1BJQ0MgUHJvZmlsZQAAeJx9kD9Lw0AYxn+Wgv8H0dEhYxelKuigLlUsOkmNYHVK0zQVmhiSlCK4+QX8EIKzowi6CjoIgpvgRxAH1/qkQdIlvsd797vnHu7ufaEwhqJYBs+Pw1q1YhzVj43RT0Y0BmHZUUB+yPXznnrfFv7x5cV404lsrV/KZqjHdaUpnnNTbifcSPki4V4cxOKrhEOztiW+FpfcIW4MsR2Eif9FvOF1unb2b6Yc//BA645ynm1OiQjoYHGOwT4rmqvaeXSJxT05YtqiiJpOKiKTUA5fSgtHTNK/9InLD9h86Pf795m29wi3azBxl2mldZiZhKfnTMt6GlihNZCKykKrBd83MF2H2Vfdc/LXyJzajEFtVc40XNXmSNnVf20WRcuUWWL1Fx+iTfmvd1mpAAABgFBMVEWpZlWoa1rJpJima1prFAbMppqJLBaoaDiWKhN4eBx2EQSdSjaMMBt5KRezsGj7q6ufTDn/cXGXSTV2dnaaZlW8koS6h3f//6rbw7m7koXuq2j//3+6iHn//wC0hni+opnCiXi/v7/ey8Oq////fwDAfm3YwLYAAP8A/wBVqqqqVarChnLAmYuPKxQAAAD9/PvWuK3o19Dy6uaTRzTGpJiNOSWnZ1aOMRutd2iCHQeYV0a0hnfv4tvFmIvZw7q6lorjzMTMrKLaysOjWkj///98KBN8GgSaZVXkxbpSAAD/AABqAwB3AACqVVW+opeXUD23jYHd0818PToxAADCinm/f3/iuq54FwSqqqp9PgCGKBS/Pz+qVQCSOSSURzSrZ1QAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADFc4AbAAAAYHRSTlOb6Z1VI9JeEBgDS6WS/wcD5QJZAi6SoAPMYgQC1wFh79wE2gMC8rEBAQMDv2r/AP7+/f7//v/8//3///3++/z+/P3+/QH/////EQEqCQP///3+BxD6BP5OAwRQBAOPjMyCSI5PAAAYgUlEQVR42tVdB3vbttamYst24jiraZru3t57v00SIAgS4iZlTe+RNLP5///iOwfgki3Jsi3KNp42lkSJxAucjYMDzVhS2/94+lK+OFvf29j4ur3dajnQhMA/31ra9teNT3vrZ/Iru6cf95f1XG0pnT94pv4+2fhb+/bv8/D9kFLLrDUroMkwDc8ByMaTkfzyh4P9+wFgtPUc/+xtfG2JMKVBvdtFqyN5b59/2/60h7/5YWt01wDGX04Rw1/QeTvJ+2mdRGnsi4HnHTHVPG8g/OOYZDSHQUkIILD3p1/Gdwjgy89y6Le/hUNLdZ3EwmNcn9Fc5g38w0wBpekf2qd15IiDuwGwL8d+Y7tly3G1skPhzez6JIyBT9Rv3oeanIfN/ZUDGH/Ewf/qhLInJ4eCLdT5svHBcWRJDOfaFtzq868rBbAFtDN6sn0+xN5n8eB6nS8aEwQxBLa2cXZjSroJgK1NIKCn32wUOPSmvc8x+BLD8I+/gYh++rISAEg861+d9zj/RNym96p58QkORKiBZP08bh4ATPTeU/FeDr6nL6VxQZCSJIQP42YBfNw1Rk8dJP0Tn+nLawOkpCDcHoGZ0SCA8WfjbEMST7YE2rlASTZCaL+6Lh1p16OeJ9t2I92XEA4BAv3fT8DNjQAY7Rr7X89B7FO/ie5LCMgL7zWgoy/LBwDa5gkSvxUzvbk2yOAJ4Yac7aUCGD8G2RPCFBOvwe67IJF80C5DkEfvxssEAFrmry4MfyD0xhuDSTBxEk6XB+AjyM5z1Jiij2K70SnQ+/bJCU7C2WIItIWkz94LkJ0n6Ql3CCHUbogLukOaEps7EQNmtn7ZM35YCoD9XeMvB23OgW/ZypRPGpmEbn5z22S+BZxgvzJ2928PAKQnko91Yka0dAztBvrPk/L2Q2q1IiSjBeSpdiX5nz0F3UUHUd1HN53lA7AnHuDvpPBUYITPtwOwpcg/Yn2/aQBp/f50oOvwROuPPWPzNgC+GHstmFkbaJ7XwySkCfF56QEDoNn2+hU6bS6AU2OvCzdJXZBv5w1PwCQNWV0UqYjA3jK+uymALTAepN8awu3D2t1jtxENRiaHiA8DFBv2xlwq0ubxr+o/UCR0mJUyKGrMGBqUVJSiaVeQ0yfj8U0AfIb+B6XYdDslF4eNKeJKknrlG7S/Nox31wfwUfZfRQUtNIHIiZ9lHsIYNmRMdAMUP4KS2PLBrIglgPgQ5mMOFWkzzTekH2twIiexpwMTe30OPfcEyRoC4NBDAeTJ3f6x2S3kXtgjc6lImy1/ApN6ggKKDCbAMWNdsW6nMWvOLW/sZgGHKQC2C2i3l0pZ9Pg6AMD6b8GvD21TsBbyLA8yV19h86S1wj3BUtOX+mBvBoKpAPZfjl5IoRMc5yNum56+0uaj6c47IP1SJZrao93vFgbwwXj6Xv6K9ZzheUh9W0rS1TUXZagfUmGnrC+UYALLblEAn42nUiueRGSYi7UTwlc7A06Wi3CLkEi+DDTj2WIAvhh/SZlPdgpVYgq+4v4DQ/PCtKA7RydmZpnJq2lmkTZFgK470Hty4nac4hauvvrWKYaP8s6RNRhAn7amGNeXAIx3kYHpjk1Qdubt/A4AuIVpRJnuUtEHvdY+2x1fCeBAMvCgawoUnvk9ju8CQFQzrVPKdYKM/PwqAMAAYDjHfRt1oaiZVqtvhfkYgAQ/Np0OvKevjJfzAfxrdw8sCOJKwU8CX3Jzxu8EgDJHqUgtH+jHkRRN1ndfzgXwzHiamAEQXXLIhtSTk2AN9DtqQPbU6+u+FbIoVO+/v0hE2gUG+AscF4Hui0jQhAME5M76D/qYeGiBedT2pYuTmXQN1OxMAOPdfZgmu6dzCm5XT783jUWSlzuehUQ0ngngwPgKqjcKQYeQI/0+NbcVmA6zcV3xzaRC1iZU2F/KdafmoX7fGjuxlFQCIno3HcD4v0cvCsHvddx7BqATF1q1ffbP8VQAB8ZGGdkY8vs2A90yDcZaq0uiGgDJwUVr3TcAtagR8PE0AGBE1wIz4r4BqAeNtBoXaLUoqKjFrph+r5jA1WudM5N148slAB/+8+mwBsC5Vwys65OhzUeVd6aVRty6mIg/h12ndU84+UWr2yUTnYs2S9+mAPCzUZ8Amp1QkgT3ZBpCK4roSVaPXr8ppyAH8F/GCERQLHILVvSYx3usYAMmbPQOVjYh3NXd89ApnseZ7E4uh6KWl4EgMsYTAE5RBFG9h0uc5u80gOEfqvF3XugY4qVcULqiGQmDIUOJPmT4dGThf1NKiBVJOor7GKYtBZGWL+SNvpmmz1UwxffUbKU4AzTs28q8aGZpbMr4y4CcjLF3qA0mAUvyqLhihNCFb7RH+QKgVqwE2GbAiwB0lJMbxlLigJfc7a9Y5DMHfZFuTte0iF074N+AOv6pAgCO/HZgxgAsBeffP650HhAjJV4t6L2KVjw/8wKY8xeVDdGyzZMBBcOaWShJxyWAx8aeD44XILfBn3Fq8vRI7/smreCsxvAsMmgDMCr1anWRejDyfoZElJj0tXKPNSVDvyZmJKMA9LgucbMe+6N8n65MCnnlahBIP1ZXALESRXFcKjMEMJYyVMLOdnQWVwvaVCQ11cZWBYDVFqVtv5L/mc/7ip4Ds5CkmgqlKGBZEIRDerQzqfYq+2I18S2WTn+8GfdEYNsmpYVVfZADODC28TPL70l4wyIebGYDYWd1DRiuQopOWAQkHoiCJbhkjozn4lTREAAYKTs08HS1kGcx+UXLpKyDyTViYvWzcUauGf4Bc+FxHaHoO+rJnlgFYyd7uIKs4XKepCC/o+cc7+Gyv88GOc3XVojpClx9UZtxp6OYeoCDLvrHCkCuKoCG/iEB/GD8TQsPRnKM0+eDSuTX+m+vRA55yRSrXvYozLMo4K1d0JBm7BujlgwGyXbkHE4Go4v+n6TZqrw0bmfEupTU0OEE2NRhlb3xdh1oSMujcX5B3B1dEPN9tV4YEMwaiS26UufAMTOgkqBlVXHlLrXSga7S0nQXg+8Beve4bvMV54wO7SKZuNeqJUP40jB0PLrKSFfHz5iNcsepZoDZXk4l3XN7SJUc+kGK0VYxX9TuTrkZ8n7YWa135nKXSs98CpOX5GW2z4AHxhPOfDjDvF3xImtu0k0z311aE4pbxlj7WAtngbKbSpAWWX3/waSj0yagXLgJCArSTe0UWeAwnatqPXYHAGY8tZwBAer2e+Od9hJZwCks2FC/783NtUSEr9rGrmaMBCi3flwsCN771iqdK9tMRiCFnoS4EuvVVff9bmGxdO3jop9mbBBc/JBLgkJ/CM1N5cKpi4t+vwEAMIRQ9nhCDPSH0bgQAmO30jPWDM16ICN/GUiCAM6+mWb3YQIAo7p9pq370zW2/iDYOdvS9oCX+QMFIEz6WgNvLHqg/dfbYFFrIEVT/cHygPmj9nVokgfafxaY5vfaNp0xAy6TvM3yVQKOm+NzZuGstlbALmyFrl2CW/CJKAbrdqurXN7Zrd300oNql2fY+RKAmGpAMEpBPwiq7COWUGgJU5EbeEmcwtOjdOhX3XTkz6Ze66IrQsOiR2GA0W+HDln+1r74IF0+f7Yv4oEm09AWnUVhAfpFisBYEewtg69WN/deJ61YYlZCYfJangpvRrz8po/fyaU4Ub87mgiEo+05Z1UiMttaa6a7Bfh8UVyFTtugwXlOe6mg+Y2hk8ekksRHVi0M34UultfgDlR4nl32iMggVQ0AUXYCfqPYberIpL95mkxzZvuLNga408I/Mn2uuAIB+L1IXpEW1VFNlYT1MQcArLwWypia3oO7HhUAYNAvAtAxfOt1qi7MszFTkyCAo5lOXR4HK8kmYDkAzBzxCwCBJcN6OV9h+JWXAPCaIoZhjpgVtheRnRtcBIB3dCo5E5M5UhJ0mObMsSTiigBzui8A5OtPCkDxRj3cY2UHujWaB2hhgdEvegxY43kABEZWihmbakvMB9CtorkAIPYGnlsCUL+SAI5jq4gGwJTboVV0BXnAt/KOR5dnwMa5nAcA5Ehozwg15MaQJq4CUM7AYKfTKSaW5JQhAbCd4uEsKFMtCh7YSfNrMNTdjsJY8ACRgfzZALpl7u5MAMk1ABA/9AspJGLFDxJAGAaK1DA8n0VRVqxnwu9jP7+Gvwr8brcuhYgSRTMBAN+r281gYx4BgNZMAK66lTtND2BMw67xgOJ1kNqY6thL5ZhNXqv0AOE1AEhEE3qgBgDcXIw5g98yg435EADM5QFKC1+HRagg1Q4seC06x/kb1LZJvs8btKiTa+PyGq32gHsEd/nElSYOpaqNJjQxLvHlT+3mWrj8yiwmnh227VWpl72dXq9429upXcOPe53J709c65dR1h73mFu+1Xd6E8/Y6V186sTzppGIEqMm63B3WpSeLN7eL37pPbl+mxqyhRFBAOASC1GRSu0LsX1o43/1dnjhPX4EHx6qF+r61J+E9Y8Pqz9wddotLzxsSo6DAHOSoSmRx9anxeQ6vQ4Izk696fKt3umrV/hP9Ukv/1IfP4B/+nr5Y33iT0+v7gZP6es9vd+XVIi3mXhe8cXLKyB5hF3bDhZP5KgIraQ5rl944ZZrKLWvu9WPiw9dt7zg1j5f1D1Xm3wCMKfBH5BzIK6OKjpJ0ua5OKHH8tl2QJi6FCRSAIkh7+Ir1wb5U/Smm4i+M5SpP5xIWXOUDKkNWnkIEv4F/OPa8mNnmN/myiUcCaCVgEODWRKIgF4dHPLNQE4UamJlTQvzxBIypdAiaCG4INiYIzd/UDMqkytaJubsSJUi7XNXFo8AAEdoZjAr63Tz2+FtFklZlWuxJz56ZBtDNEdiP14EwO9yM4ptDvqgdzykRCnlOcj9PrMw4FoBoEK4FcGGOQCSG9vcSnuoHmMpDFmId3NpUNzmyhB17KtlmR+1TxgqzRaiOz9nlYRKLSukgYO2JoPxe6HbqBFrM5Ab3xJAYEUSgGf+jtsk8ScYnlUAHDOmia5u4wJxLBRn66h0gt+0vXi+01P7iW8eZxZ8k1is0zmW+p77OPfcinpA89iz0OQ5gIyxagYwy8eRFBZY8gWzFIAwd85xmRduo3f0yOILyROZF0dfY2hx0YUZ6CzFuztmIkIJ+pz6ViRVuh2bcjR99EA8SUJ+jYScgdplTs1MWTZMGtcKABptTP0lIp1tPF+AgAmKyaZ21lq0SoFMuhAFLWXIi7jluCVlC+ZjyI5lKrOLZzXdAgD6KYaQHRzpFEmLS8uHWcfK+1Yd4Ok18qpw3sy3ZzK8vmBoi3vFuhtr5UmdTOSmmic8P5Ubdx1HeT3w5VJZeFz+X/vHlbdS/xZ/1G0WDq4jgP9QCxzZgwxPYwmBR2qJ6WFGd9H9+z9c5LPv4XaHBRf7gjUAMPLNB7lCgA4zXTe0l8a3VeUUL3mFDCjnrbGrnSIX+w+UBx4Z77SPxifyMFcIwMLCZI8xph0H7EEyMd00xpjw9K2hejuNLzDJhCfjAzJB+ABZwMpTzg5QEyTugwMA3s+PMulPpV16+kODYJt/nsq0S2PX0IIywK82bd3T1pmUQXniq3FqPCFmueWK+b64p3q53jVwiiUF5cnfflV6wa6FX+9Z/6uUJpl5TNfz5G/jf6RPkKvj5O7qMCxg/+dGT4qlp8r0e+ML0lCOzrunm1mLtHxpdoJnnaIaPqi2oIC3SKTbHV2xJnKnxmee2QqWw4CY2Va5BQWmAvPOhGmXBQmnA2CrUNjc4fMAmF6Pyi0atU1AwAvrYFh41AqtefVsgItWoC786aalV3QtCeELtkmf1QCMQRWYJq0Xa+TTqbB5kwOJWMybAQxnUXTnd3+ttiJuomdc27tii+nGBwBrdk8rkx2d5qNzf3Jv1Y95ZYBiMyiGhwhycEbUPgIklaNaOr4jsFiPzWjYpKomKUpL4p5X9r0Ied4dJ07lwQupCMw/JzeDGjIFnLhxnf4cYlUh605o+njrzHSa4wJXjzHubZLjmn0vTBridiq3cMNEv4tFYt5d2FO/DwKoy8tqAEzElpnyarSPij2ZhJKmigZHWUEmUUWoHS8xqZ8PW8cxox6PTHp6YUO08TNKUkoKM6Kbbx/uVjLNqw5oaWZndG3/VRVpYw5TOliNGghCC+fo0cUt6ViaOd8FG7mFzLL7YPJFXr6PpePVNngtPwrA7Usy0HU8h2KENSnKNBVFn+jrskhPSULP5W4y3Hfou3luit9PVb1MtLVdzmpydvlxGE7rBWtxDbXY0yf0KB9YDP4GkTW1LAPapDAFA0fOFpc/YXpxU98JI1p7QtIAFzi1CU4S4neLHWxE2QexpGvLczN05g+mlSaBKSByQxD0NbUDX/dnbCtthou7dMYmWk+3aRxZ8qQhzB+CCXg2tTjMSO66VKdADfrcr+0l9uPaLummtjRxp3aQk1/xhEUcXc1CYJl2ZibTi8NgeZ5I7kBW+7fD+ih4oE9KO6mxPVmlHKKxM1HomvqR2lSf1ZXwpQJJ/5SrNZQf4yEVmKGV1bZndRjib7Q4QLGfDSRPr17Oxj4iZoTgvC6KlLejD9NnAMvsptIQSWWp8rRFa2Soh5ZHmt0XXewQi3FJtraNmYgEPwNhiEsC1tpEka0LRcI0ikqwLNOYVUTTtURZ/Dtqpu50UJYisFETFAQVBZWJbyMHf5hXps2XK56xVS+lAf13OyHtyQQLrLkRNFO+Hx9l5XvPcSk2R+ArGwDjJlit8HROmTbABma15XUUB0XEIoRSlfwM3hiuRZoOI7QZEuKE2jxUVa6VBcMw4SIy1dlfXl8mDP42r1Ae6mMtAOtBkCK9jXseLxPIuRNiwlhTHgG6Giz8pTR3GT7dLQyAsIU1Uh5dLFx7uVjkhPaiNIgi625Cv/w9FtmpGQA0MOnWFcUijZfGp8myDsTznDtaPehKY25CKa9dVa4T613+Xf9RrN9h68iN9BO1tX5YoGQt7iyrAbjjqHUdwNvR7u4iRYPrbHDXa+CsZh6BF/BusbLNn+xGD6u4oZsQXGaAGYWzN42/h/em3lxFDd9jIY9FS5drOXC7f7fdBwakl4vjXV08/ufRN5kPZQXeXc+AyB2U9uk1isfL8v3o1TAsfXanPIyZYWiD/bl+nfL98gAF3AuArgH17mzVrCMCLFXjzxBAc4+weCwrrkSDIPaRkV39KApXphFYanMkfz8QUYJsfKFM7UKHiGxJBCSmngBbqIN1u1aV04IxEcJBCcOzA0/M7f+cY1zUHAS40SUgPl3hwlOYu2GU6YEVy/4/u8lBOoAgVjGswqK1vNXInbKsnTyLZt74zz/KaFMioF5V92oVGQnloVJCGRJ0qgJe7DCpx8Z6G6ioqyeXg8bNWz+2DCWC/PnHzY/zOjDWf7FMyz+ZLNrVrOwsYmgxmtJvX8+h/wUOVNs01ltBPabIGyYizlkx3SSTx5H9dOsj7bRaiDFoumjqeXG+vapBNZrHvwsfKvi3Oj5YUFtYDed2dXyTimgoSIxFwL5f4NzrhY513EDJfNxz8VyUhn1MErCO6/Y90GXJmrH7eCkHa34A0y7Ig+qh2WgJGV8qS471+tqb0+3nmxxtegqMgAn2YKFwWq2BL4uh3XKTE5PbKzGQFQD5by7vcNmPhvEJw43kqMOssK8zvcNETJdkWtiZ73B5ZlVEubIkojXjyhMpr3e876axpwFdWse9lhmn1MeCiMsqrI09Tj2bxql11Mca38GjdePZr0s+YBnEwQaucURlBdblFeQaFFL6hBXDv+wDltGu2DVG2kSYaVm5dbxav8J0DBj+3YX7f61DxkEnfnpTD9slS7FOJ8OHj2D4n1/jnPTrHvNuvAqD5Ya9eFAva/8bjFNjx7yjQEU6sq1lnnFaCwPS7/eN3XfX69E1ARjjDwbIoxLC7QN31fp/AsRvfBgbzQJQdLSn5YR0exoqYofRG9Bb78bX7s71ARjGl+dgIWltWeo5dW4nio6kt2291WD0ryF7bgcApDRYKWev3sjSpdS+MQbmyzskKHlu1v2bAjCMX1HRb2lhoirFimsrNd5VvQ/Im9foOf16w47cFAAQEdpaow3NpiqfIXbYQsYdFuP2/FQd3Bk9WsPUt2f7N+7GzQHklGSsv3rTVtF4K7N9h82lJ5d7Iib5qVDtR2t7SDvPxrfow60AgEg6wJDx6JX2S5r7ghYl9rFwPKwPVtQBcMHTPfIcP06L4zKDqP1Gjv27g/HtenBLAGgjbUq/Y/2V9ntaO8reCmgWqbIWUZRRq+ZWR21tbUsm+Lx+fOvH3x4AYjhQq+ejT2vao3ZKksCalrhECWk/erS2MZJf/uH5d8t49lIASJ4+/aw8wLO9rVdrmqb90g5D27ZTLOvRbr/RtLW1zb0zlVr17nR/Wc/9f1b6PZWNF7P9AAAAAElFTkSuQmCC';
+  document.getElementById('logo').src=LOGO_URI;
+  var LOGO=new Image(); LOGO.src=LOGO_URI;
+
+  var LIVE=!!(CFG.url&&CFG.key);
+  var KEY='yerbabonita.perfil.v1', PKEY='yerbabonita.perfil.jugador', RKEY='yerbabonita.perfil.ronda',
+      MAXP=5, DEF=[3,3,3,4,3,4,3,3,3], HOLES=9;   // HOLES = 9 o 18 según la partida
+
+  /* ---- Datos del campo: son los mismos 9 hoyos, jugados una o dos veces ---- */
+  var COURSE={
+    hcpFront:[5,17,7,1,11,3,15,9,13],                         // handicap (ventaja) de los hoyos 1 a 9
+    hcpBack:[6,18,8,2,12,4,16,10,14],                         // handicap de los hoyos 10 a 18
+    tees:[
+      {id:'azul',    name:'Azul',     color:'#2C7FB8', d:[136,95,99,235,155,238,125,129,160]},
+      {id:'blanca',  name:'Blanca',   color:'#FFFFFF', d:[125,88,92,217,149,230,94,83,131]},
+      {id:'roja',    name:'Roja',     color:'#C2402A', d:[119,81,85,206,143,221,86,77,125]},
+      {id:'amarilla',name:'Amarilla', color:'#E8C230', d:[68,54,85,114,80,143,34,32,53]}
+    ]
+  };
+  function tee(id){ for(var i=0;i<COURSE.tees.length;i++) if(COURSE.tees[i].id===id) return COURSE.tees[i]; return COURSE.tees[1]; }
+  function sum(a){ return a.reduce(function(x,y){return x+(y||0);},0); }
+  function teeOfHole(g,h){ return tee(h<9?g.tees[0]:g.tees[1]); }
+
+  function blank(){ return {n:'',hcp:'',sc:new Array(HOLES).fill('')}; }
+  function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+  function store(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
+  function el(t,c,txt){ var e=document.createElement(t); if(c)e.className=c; if(txt!=null)e.textContent=txt; return e; }
+  function esc(t){ return String(t).replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];}); }
+  function hcpNum(v){ return (v===''||v==null)?null:parseInt(v,10); }
+  function fixSc(p){ if(!p.sc||p.sc.length!==HOLES) p.sc=new Array(HOLES).fill(''); if(p.hcp==null) p.hcp=''; }
+
+  var prof=load(PKEY);
+  if(!prof||typeof prof!=='object') prof={name:'',hcp:''};
+
+  var local=load(KEY);
+  if(!local||!local.players||!local.players.length){
+    local={pars:DEF.slice(),totals:true,game:null,players:[blank(),blank(),blank()]};
+  }
+  if(local.game&&(local.game.holes===9||local.game.holes===18)) HOLES=local.game.holes; else local.game=null;
+  local.players.forEach(fixSc);
+  local.players[0].n=prof.name; local.players[0].hcp=prof.hcp;
+
+  var R=LIVE?load(RKEY):null;               // ronda compartida activa (o null = tarjeta local)
+  if(R&&(!R.code||!R.players||!R.queue)) R=null;
+  if(R){
+    R.online=true;
+    if(!R.game||(R.game.holes!==9&&R.game.holes!==18)) R.game={holes:9,tees:['blanca',null]};
+    HOLES=R.game.holes; R.players.forEach(fixSc);
+  }
+  var s=R?viewFromRound():local;            // lo que se dibuja ahora
+
+  function gameOf(){ return R?R.game:local.game; }
+  function saveProf(){ store(PKEY,prof); }
+  function save(){ if(R) store(RKEY,R); else store(KEY,local); }
+
+  function viewFromRound(){
+    var ps=R.players.slice().sort(function(a,b){
+      if(a.pos===R.me) return -1;
+      if(b.pos===R.me) return 1;
+      return a.pos-b.pos;
+    });
+    return {pars:DEF.slice(),totals:local.totals,players:ps};
+  }
+  function meP(){
+    for(var i=0;i<R.players.length;i++) if(R.players[i].pos===R.me) return R.players[i];
+    return null;
+  }
+  function isMe(j,p){ return R?p.pos===R.me:j===0; }
+  function dispName(p,j){ return p.n||(isMe(j,p)?'Yo':'Jug '+(R?p.pos+1:j+1)); }
+
+  var card=document.getElementById('card');
+  var nameEls=[], scoreEls=[], parEls=[], hcpEls=[], builtKey='', pendingBuild=false;
+
+  function cols(){ return '1.9rem 1.9rem repeat('+s.players.length+',minmax(0,1fr))'; }
+  function keyOf(){
+    return (R?'r':'l')+HOLES+(gameOf()?gameOf().tees.join('/'):'')+s.players.map(function(p,j){ return R?p.pos:j; }).join(',');
+  }
+  function isEditing(){ return !!(document.activeElement&&card.contains(document.activeElement)); }
+
+  function vlabel(g,h){
+    var t=teeOfHole(g,h);
+    var d=el('div','vlabel'); var dot=el('span','vdot'); dot.style.background=t.color;
+    d.appendChild(dot);
+    d.appendChild(document.createTextNode((g.holes===18?'Vuelta '+(h<9?1:2)+' · ':'')+'Salida '+t.name));
+    return d;
+  }
+
+  function build(){
+    card.innerHTML='';
+    nameEls=[]; scoreEls=[]; parEls=[]; hcpEls=[]; pendingBuild=false; builtKey=keyOf();
+    var g=cols(), G=gameOf();
+
+    var head=el('div','row head'); head.style.gridTemplateColumns=g;
+    head.appendChild(cellWith(el('div','hole','H')));
+    head.appendChild(cellWith(el('div','parbox','Par')));
+    s.players.forEach(function(p,j){
+      var i=document.createElement('input');
+      i.className='name'; i.value=p.n;
+      i.placeholder=isMe(j,p)?'Yo':'Jug '+(R?p.pos+1:j+1);
+      i.maxLength=30;
+      i.setAttribute('autocomplete','off'); i.setAttribute('autocapitalize','words');
+      i.addEventListener('input',function(){
+        p.n=i.value;
+        if(isMe(j,p)){
+          prof.name=i.value; saveProf();
+          var pn=document.getElementById('pf-name'); if(pn) pn.value=i.value;
+        }
+        save();
+        if(R) queueOp({t:'jug',pos:p.pos,nombre:p.n,hcp:hcpNum(p.hcp)});
+        paint();
+      });
+      nameEls[j]=i;
+      var hc=cellWith(i);
+      var tag=el('div','hcpTag',(p.hcp!==''&&p.hcp!=null)?'hcp '+p.hcp:''); hcpEls[j]=tag;
+      hc.appendChild(tag);
+      head.appendChild(hc);
+    });
+    card.appendChild(head);
+
+    for(var h=0;h<HOLES;h++){
+      (function(h){
+        if(G&&(h===0||h===9)) card.appendChild(vlabel(G,h));
+        var k=h%9;
+        var r=el('div','row'+(s.pars[k]>3?' par4':'')); r.style.gridTemplateColumns=g;
+        r.appendChild(cellWith(el('div','hole',String(h+1))));
+        var pi=document.createElement('input');
+        pi.className='parbox'; pi.value=s.pars[k]; pi.inputMode='numeric'; pi.maxLength=1;
+        pi.readOnly=!!R;
+        pi.addEventListener('input',function(){
+          if(R) return;
+          var v=pi.value.replace(/[^3-6]/g,''); pi.value=v;
+          s.pars[k]=v?+v:DEF[k]; save();
+          for(var q=k;q<HOLES;q+=9){            // el mismo hoyo en la otra vuelta
+            var pe=parEls[q]; if(!pe) continue;
+            if(pe.input!==pi&&document.activeElement!==pe.input) pe.input.value=v||s.pars[k];
+            pe.row.classList.toggle('par4',s.pars[k]>3);
+          }
+          paint();
+        });
+        parEls[h]={input:pi,row:r};
+        r.appendChild(cellWith(pi));
+        s.players.forEach(function(p,j){
+          var c=el('div','cell');
+          var i=document.createElement('input');
+          i.className='score'; i.value=p.sc[h]; i.inputMode='numeric'; i.maxLength=2; i.placeholder='–';
+          i.setAttribute('enterkeyhint','next');
+          i.addEventListener('focus',function(){ i.select(); });
+          i.addEventListener('input',function(){
+            var v=i.value.replace(/[^0-9]/g,'').slice(0,2);
+            if(v==='0') v='';
+            if(v!==''&&+v>20) v=v.slice(0,-1);
+            i.value=v; p.sc[h]=v; save();
+            if(R) queueOp({t:'score',pos:p.pos,hoyo:h+1,golpes:v===''?null:+v});
+            paint();
+          });
+          (scoreEls[j]=scoreEls[j]||[])[h]=i;
+          var sub=el('div','sub'); sub.dataset.h=h;
+          c.appendChild(i); c.appendChild(sub);
+          r.appendChild(c);
+        });
+        card.appendChild(r);
+      })(h);
+    }
+
+    var t=el('div','row total'); t.style.gridTemplateColumns=g;
+    t.appendChild(cellWith(el('div','cell lbl','T')));
+    t.appendChild(cellWith(el('div','tot','',0),'parTotal'));
+    s.players.forEach(function(){ t.appendChild(cellWith(el('div','tot',''),'tot')); });
+    card.appendChild(t);
+
+    var v=el('div','row vspar'); v.style.gridTemplateColumns=g;
+    v.appendChild(el('div','cell'));
+    v.appendChild(cellWith(el('div','cell lbl','par')));
+    s.players.forEach(function(){ v.appendChild(cellWith(el('div','vsval',''))); });
+    card.appendChild(v);
+
+    var gaps=el('div','gaps'); gaps.id='gaps'; card.appendChild(gaps);
+    applyFin();
+    paint();
+  }
+  function applyFin(){            // partida guardada por otra persona: la tarjeta queda solo para ver
+    var ro=!!(R&&R.fin);
+    playBox.classList.toggle('fin',ro);
+    if(!ro) return;
+    if(isEditing()&&document.activeElement.blur) document.activeElement.blur();
+    Array.prototype.forEach.call(card.querySelectorAll('input'),function(x){ x.readOnly=true; });
+  }
+
+  function cellWith(child){
+    if(child.className&&child.className.indexOf('cell')===0) return child;
+    var c=el('div','cell'); c.appendChild(child); return c;
+  }
+
+  function fmt(d){
+    if(d===0) return {t:'E',c:'e'};
+    return d<0?{t:String(d),c:'u'}:{t:'+'+d,c:'o'};
+  }
+
+  function paint(){
+    var rows=card.querySelectorAll('.row');
+    var parTot=0; for(var q=0;q<HOLES;q++) parTot+=s.pars[q%9];
+    var totals=[],played=[];
+
+    s.players.forEach(function(p,j){
+      var strokes=0,parAcc=0,n=0;
+      for(var h=0;h<HOLES;h++){
+        var val=p.sc[h]===''?null:parseInt(p.sc[h],10);
+        if(val){ strokes+=val; parAcc+=s.pars[h%9]; n++; }
+        var row=rows[h+1];
+        var sub=row.children[j+2].querySelector('.sub');
+        if(!val){ sub.innerHTML=''; }
+        else{
+          var d=fmt(strokes-parAcc);
+          sub.innerHTML='<b>'+strokes+'</b> <span class="'+d.c+'">'+d.t+'</span>';
+        }
+      }
+      totals.push({name:dispName(p,j),strokes:strokes,vs:strokes-parAcc,n:n,hcp:p.hcp==null?'':p.hcp});
+      played.push(n);
+    });
+
+    var tr=rows[HOLES+1], vr=rows[HOLES+2];
+    tr.children[1].querySelector('.tot').textContent=parTot;
+    totals.forEach(function(t,j){
+      tr.children[j+2].querySelector('.tot').textContent=t.n?t.strokes:'';
+      var box=vr.children[j+2].querySelector('.vsval');
+      if(t.n){ var d=fmt(t.vs); box.textContent=d.t; box.className='vsval '+d.c; }
+      else{ box.textContent=''; box.className='vsval'; }
+    });
+
+    var g=document.getElementById('gaps');
+    var live=totals.filter(function(t){return t.n>0;});
+    if(live.length<1){ g.innerHTML='<em>Anota el primer hoyo para ver diferencias.</em>'; return; }
+    var min=Math.min.apply(null,live.map(function(t){return t.strokes;}));
+    var leaders=live.filter(function(t){return t.strokes===min;});
+    var rest=live.filter(function(t){return t.strokes>min;})
+                 .sort(function(a,b){return a.strokes-b.strokes;});
+    var txt;
+    if(leaders.length>1){
+      txt='Empatados: '+leaders.map(function(t){return '<span class="lead">'+esc(t.name)+'</span>';}).join(' y ');
+    }else{
+      txt='<span class="lead">'+esc(leaders[0].name)+'</span> lidera';
+    }
+    if(rest.length){
+      txt+=' <em>·</em> '+rest.map(function(t){
+        return esc(t.name)+' +'+(t.strokes-min);
+      }).join(' <em>·</em> ');
+    }
+    var thru=Math.max.apply(null,played);
+    txt+='<br><em>Van '+thru+' hoyo'+(thru===1?'':'s')+' de '+HOLES+'.</em>';
+    var netos=totals.filter(function(t){return t.n===HOLES&&t.hcp!=='';}).map(function(t){
+      return esc(t.name)+': <b>'+(t.strokes-parseInt(t.hcp,10))+'</b>';
+    });
+    if(netos.length) txt+='<br><em>Neto</em> '+netos.join(' <em>·</em> ');
+    g.innerHTML=txt;
+  }
+
+  /* ---------- Red: llamadas a Supabase (funciones RPC) ---------- */
+  function rpc(fn,args){
+    var ctl=(typeof AbortController!=='undefined')?new AbortController():null;
+    var to=ctl?setTimeout(function(){ ctl.abort(); },10000):null;
+    return fetch(CFG.url.replace(/\/+$/,'')+'/rest/v1/rpc/'+fn,{
+      method:'POST',
+      headers:{'apikey':CFG.key,'Content-Type':'application/json'},
+      body:JSON.stringify(args||{}),
+      signal:ctl?ctl.signal:undefined
+    }).then(function(r){
+      if(to) clearTimeout(to);
+      return r.text().then(function(t){
+        if(!r.ok){ var e=new Error(t||('HTTP '+r.status)); e.http=r.status; e.body=t; throw e; }
+        return t?JSON.parse(t):null;
+      });
+    },function(err){ if(to) clearTimeout(to); throw err; });
+  }
+  function friendly(e){
+    var t=(e&&e.body)||'';
+    if(t.indexOf('ronda_llena')>=0) return 'La ronda está llena (5 jugadores).';
+    if(t.indexOf('ronda_terminada')>=0) return 'Esa ronda ya fue guardada y no se puede editar.';
+    if(e&&e.http) return 'No se pudo completar. Intenta de nuevo.';
+    return 'Sin conexión. Intenta cuando tengas señal.';
+  }
+  function editor(){ return (prof.name||'').trim()||'Alguien'; }
+
+  /* Cola de envíos: si no hay señal, los scores esperan y se mandan al volver. */
+  var flushing=false;
+  function queueOp(op){
+    if(!R) return;
+    op.por=editor();
+    R.queue=R.queue.filter(function(o){
+      if(op.t==='score') return !(o.t==='score'&&o.pos===op.pos&&o.hoyo===op.hoyo);
+      if(op.t==='jug')   return !(o.t==='jug'&&o.pos===op.pos);
+      if(op.t==='limpiar') return o.t!=='score';
+      if(op.t==='quitar') return o.pos!==op.pos;
+      return true;
+    });
+    R.queue.push(op); R.lastEdit=Date.now(); store(RKEY,R);
+    renderStatus(); flush();
+  }
+  function sendOp(op){ return sendOpTo(R.code,op); }
+  function sendOpTo(c,op){
+    if(op.t==='score') return rpc('guardar_score',{p_codigo:c,p_pos:op.pos,p_hoyo:op.hoyo,p_golpes:op.golpes,p_editor:op.por});
+    if(op.t==='jug')   return rpc('guardar_jugador',{p_codigo:c,p_pos:op.pos,p_nombre:op.nombre,p_hcp:op.hcp});
+    if(op.t==='quitar')return rpc('quitar_jugador',{p_codigo:c,p_pos:op.pos});
+    if(op.t==='limpiar')return rpc('limpiar_ronda',{p_codigo:c,p_editor:op.por});
+    return Promise.resolve();
+  }
+  function flush(){
+    if(!R||flushing) return;
+    if(!R.queue.length){ renderStatus(); return; }
+    flushing=true;
+    var my=R, op=R.queue[0];
+    sendOp(op).then(function(){
+      flushing=false; if(R!==my) return;
+      my.queue.shift(); my.online=true; store(RKEY,my); renderStatus(); flush();
+    },function(e){
+      flushing=false; if(R!==my) return;
+      if(e&&e.http&&e.http>=400&&e.http<500){ my.queue.shift(); store(RKEY,my); flush(); return; } // envío inválido: se descarta
+      my.online=false; renderStatus();
+      setTimeout(flush,5000);
+    });
+  }
+
+  /* Actualización: cada 4 s se pregunta cómo va la ronda. */
+  var pollTimer=null, polling=false, rejoining=false;
+  function startPoll(){ stopPoll(); if(!R) return; pollTimer=setInterval(poll,4000); poll(); }
+  function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
+  function poll(){
+    if(!R||document.hidden) return;
+    if(R.queue.length){ flush(); return; }
+    if(polling) return;
+    polling=true;
+    var my=R, started=Date.now();
+    rpc('estado_ronda',{p_codigo:my.code}).then(function(d){
+      polling=false; if(R!==my) return;
+      my.online=true; renderStatus();
+      if(!d){ rbMsg('Esta ronda ya no existe en el servidor.'); return; }
+      if(my.lastEdit>started||my.queue.length) return;   // hubo cambios míos mientras esperaba
+      applyRemote(d);
+    },function(){ polling=false; if(R===my){ my.online=false; renderStatus(); } });
+  }
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) poll(); });
+  window.addEventListener('online',function(){ flush(); poll(); });
+
+  function applyRemote(d){
+    if(d.hoyos===9||d.hoyos===18){
+      R.game={holes:d.hoyos,tees:[d.tee1||'blanca',d.hoyos===18?(d.tee2||d.tee1||'blanca'):null]};
+      HOLES=R.game.holes;
+    }
+    var players=(d.jugadores||[]).map(function(j){
+      return {pos:j.pos,n:j.nombre||'',hcp:j.hcp==null?'':String(j.hcp),sc:new Array(HOLES).fill('')};
+    });
+    (d.scores||[]).forEach(function(x){
+      if(x.golpes==null) return;
+      var i=x.hoyo-1; if(i<0||i>=HOLES) return;
+      for(var k=0;k<players.length;k++){ if(players[k].pos===x.pos){ players[k].sc[i]=String(x.golpes); break; } }
+    });
+    var before=JSON.stringify([R.players,R.cambios,R.game,R.fin]);
+    R.players=players; R.cambios=d.cambios||[];
+    R.fin=d.terminada?{por:d.terminada_por||''}:null;
+    if(JSON.stringify([R.players,R.cambios,R.game,R.fin])===before) return;
+    store(RKEY,R);
+    if(!meP()) rejoin();
+    refreshView();
+  }
+  function rejoin(){            // alguien me quitó de la ronda: vuelvo a entrar
+    if(rejoining||!R||!prof.name.trim()) return;
+    rejoining=true; var my=R;
+    rpc('unirse_ronda',{p_codigo:my.code,p_nombre:prof.name.trim(),p_hcp:hcpNum(prof.hcp)}).then(function(o){
+      rejoining=false; if(R!==my||!o) return; my.me=o.pos; store(RKEY,my); poll();
+    },function(){ rejoining=false; });
+  }
+
+  function refreshView(){
+    s=viewFromRound();
+    if(isEditing()){
+      if(keyOf()===builtKey) syncInPlace(); else pendingBuild=true;
+    }else build();
+    applyFin(); renderGameBar(); renderStatus(); renderChanges();
+    var f=!!(R&&R.fin); if(f!==finShown){ finShown=f; renderRoundBar(); }
+  }
+  var finShown=!!(R&&R.fin);
+  function syncInPlace(){          // actualiza valores sin reconstruir la tarjeta (no pierde el foco)
+    s.players.forEach(function(p,j){
+      var ne=nameEls[j];
+      if(ne&&ne.value!==p.n) ne.value=p.n;
+      var tg2=hcpEls[j], tt=(p.hcp!==''&&p.hcp!=null)?'hcp '+p.hcp:'';
+      if(tg2&&tg2.textContent!==tt) tg2.textContent=tt;
+      for(var h=0;h<HOLES;h++){
+        var se=scoreEls[j]&&scoreEls[j][h];
+        if(se&&se.value!==p.sc[h]) se.value=p.sc[h];
+      }
+    });
+    paint();
+  }
+  card.addEventListener('focusout',function(){
+    setTimeout(function(){
+      if(pendingBuild&&!isEditing()){ s=R?viewFromRound():local; build(); }
+    },0);
+  });
+
+  function playerName(pos){
+    for(var i=0;i<R.players.length;i++) if(R.players[i].pos===pos) return R.players[i].n||('Jug '+(pos+1));
+    return 'Jug '+(pos+1);
+  }
+  function renderChanges(){
+    var box=document.getElementById('changes'); if(!box) return;
+    if(!R){ box.hidden=true; return; }
+    box.hidden=false;
+    var list=document.getElementById('chlist'); list.innerHTML='';
+    if(!R.cambios||!R.cambios.length){ list.appendChild(el('div','ch','Aún no hay cambios.')); return; }
+    R.cambios.forEach(function(c){
+      var t=new Date(c.en);
+      var hh=isNaN(t.getTime())?'':t.toLocaleTimeString('es',{hour:'2-digit',minute:'2-digit'});
+      list.appendChild(el('div','ch',
+        (c.por||'Alguien')+' · '+playerName(c.pos)+' · hoyo '+c.hoyo+': '+
+        (c.anterior==null?'–':c.anterior)+' → '+(c.nuevo==null?'–':c.nuevo)+(hh?' · '+hh:'')));
+    });
+  }
+
+  /* ---------- Resumen de la partida ---------- */
+  function teeTag(id,label){
+    var sp=el('span','gb-tee'); var d=el('span','vdot'); d.style.background=tee(id).color;
+    sp.appendChild(d); sp.appendChild(document.createTextNode(label)); return sp;
+  }
+  function gameSummary(box,g){
+    box.innerHTML='';
+    var l=el('div','gb-l');
+    l.appendChild(el('span','',g.holes+' hoyos'));
+    if(g.holes===9){ l.appendChild(teeTag(g.tees[0],tee(g.tees[0]).name)); }
+    else{
+      l.appendChild(teeTag(g.tees[0],'Vuelta 1 · '+tee(g.tees[0]).name));
+      l.appendChild(teeTag(g.tees[1],'Vuelta 2 · '+tee(g.tees[1]).name));
+    }
+    box.appendChild(l);
+    return box;
+  }
+  function renderGameBar(){
+    var g=gameOf(), bar=document.getElementById('gamebar');
+    document.getElementById('subtitle').textContent=HOLES+' hoyos, par '+(29*HOLES/9);
+    bar.innerHTML='';
+    document.getElementById('playbody').hidden=!g;
+    if(!g){
+      bar.appendChild(el('span','','Aún no eliges cuántos hoyos van a jugar.'));
+      var eb=el('button','','Elegir partida'); eb.type='button';
+      eb.addEventListener('click',function(){ openSetup({cancelable:true,onDone:function(g2){ applyGame(g2,true); }}); });
+      bar.appendChild(eb);
+    }
+    if(g){
+      gameSummary(bar,g);
+      if(!R){
+        var nb=el('button','','Nueva partida'); nb.type='button';
+        nb.addEventListener('click',nuevaPartida);
+        bar.appendChild(nb);
+      }
+    }
+    buildInfo();
+  }
+
+  /* ---------- Asistente: ¿9 o 18 hoyos? ¿qué salida? ---------- */
+  var setupBox=document.getElementById('setup'), playBox=document.getElementById('play'), setupState=null;
+  function openSetup(opts){
+    setupState={holes:null,tees:[],opts:opts};
+    renderSetup();
+    setupBox.hidden=false; playBox.hidden=true; rb.hidden=true;
+  }
+  function closeSetup(){
+    setupBox.hidden=true; playBox.hidden=false; setupState=null; renderRoundBar();
+  }
+  function renderSetup(){
+    var st=setupState; setupBox.innerHTML='';
+    var wrap=el('div','su');
+    var nav=el('div','su-nav');
+    if(st.holes==null){
+      wrap.appendChild(el('div','su-t','¿Cuántos hoyos van a jugar?'));
+      wrap.appendChild(el('div','su-s','Los hoyos se numeran del 1 al 9 (o del 1 al 18).'));
+      var row=el('div','su-row');
+      [9,18].forEach(function(n){
+        var b=el('button','su-big',n+' hoyos'); b.type='button';
+        b.addEventListener('click',function(){ st.holes=n; st.tees=[]; renderSetup(); });
+        row.appendChild(b);
+      });
+      wrap.appendChild(row);
+    }else{
+      var k=st.tees.length;
+      if(st.holes===9){
+        wrap.appendChild(el('div','su-t','¿Qué color de salida?'));
+        wrap.appendChild(el('div','su-s','Hoyos 1 a 9'));
+      }else{
+        wrap.appendChild(el('div','su-t',k===0?'Vuelta 1: ¿qué color de salida?':'Vuelta 2: ¿qué color de salida?'));
+        wrap.appendChild(el('div','su-s',k===0?'Hoyos 1 a 9':'Hoyos 10 a 18'+(st.tees[0]?' · la vuelta 1 va con '+tee(st.tees[0]).name:'')));
+      }
+      var grid=el('div','tees');
+      COURSE.tees.forEach(function(t){
+        var b=el('button','tee'); b.type='button';
+        var dot=el('span','dot'); dot.style.background=t.color;
+        b.appendChild(dot); b.appendChild(el('span','tn',t.name)); b.appendChild(el('span','tt',String(sum(t.d))));
+        b.addEventListener('click',function(){
+          st.tees.push(t.id);
+          if(st.tees.length===(st.holes===9?1:2)){
+            var g={holes:st.holes,tees:[st.tees[0],st.holes===18?st.tees[1]:null]};
+            var cb=st.opts.onDone; closeSetup(); cb(g);
+          }else renderSetup();
+        });
+        grid.appendChild(b);
+      });
+      wrap.appendChild(grid);
+      var back=el('button','','Atrás'); back.type='button';
+      back.addEventListener('click',function(){ if(st.tees.length) st.tees.pop(); else st.holes=null; renderSetup(); });
+      nav.appendChild(back);
+    }
+    if(st.opts.cancelable){
+      var cn=el('button','','Cancelar'); cn.type='button';
+      cn.addEventListener('click',function(){ closeSetup(); });
+      nav.appendChild(cn);
+    }
+    wrap.appendChild(nav);
+    setupBox.appendChild(wrap);
+  }
+  function applyGame(g,keep){
+    local.game=g; HOLES=g.holes;
+    local.players.forEach(function(p){ if(!(keep&&p.sc&&p.sc.length===HOLES)) p.sc=new Array(HOLES).fill(''); });
+    teeId=g.tees[0]; halfSel=0; try{ localStorage.setItem(TEEKEY,teeId); }catch(e){}
+    store(KEY,local);
+    local.players[0].n=prof.name; local.players[0].hcp=prof.hcp;
+    s=local; build(); renderGameBar();
+  }
+  function nuevaPartida(){
+    var has=local.players.some(function(p){ return p.sc.some(function(v){return v!=='';}); });
+    if(has&&!confirm('Empezar una partida nueva borra los scores actuales. Los nombres se conservan. ¿Seguro?')) return;
+    openSetup({cancelable:true,onDone:function(g){ applyGame(g,false); }});
+  }
+
+  /* ---------- Barra de ronda compartida ---------- */
+  var rb=document.getElementById('roundbar'), busy=false, msgTimer=null;
+  function rbMsg(t,ms){
+    var m=document.getElementById('rb-msg'); if(!m) return;
+    m.textContent=t; if(msgTimer) clearTimeout(msgTimer);
+    if(t&&ms!==0) msgTimer=setTimeout(function(){ m.textContent=''; },ms||5000);
+  }
+  function renderStatus(){
+    var e=document.getElementById('rb-st'); if(!e||!R) return;
+    var q=R.queue.length;
+    if(R.online===false){ e.className='rb-st off'; e.textContent='○ Sin señal'+(q?' · '+q+' por enviar':''); }
+    else if(q){ e.className='rb-st'; e.textContent='↻ Enviando…'; }
+    else{ e.className='rb-st'; e.textContent='● En línea'; }
+  }
+  function setNote(){
+    document.getElementById('tnote').textContent=R
+      ?'Los scores se guardan en la ronda. Sin señal quedan en tu celular y se envían al volver la conexión.'
+      :'Se guarda solo en este celular, aunque cierres la página.';
+  }
+  function needName(){
+    if(prof.name.trim()) return true;
+    rbMsg('Primero escribe tu nombre en Perfil.');
+    showTab('perfil'); document.getElementById('pf-name').focus();
+    return false;
+  }
+  function renderRoundBar(){
+    if(!LIVE||(setupState)){ rb.hidden=true; return; }
+    rb.hidden=false; rb.innerHTML='';
+    if(!R){
+      rb.appendChild(el('div','rb-t','Ronda compartida'));
+      rb.appendChild(el('div','rb-d','Todos anotan en la misma tarjeta, cada uno desde su celular.'));
+      var row=el('div','rb-row');
+      var nb=el('button','','Crear ronda'); nb.type='button';
+      var ci=document.createElement('input');
+      ci.className='rb-in'; ci.maxLength=4; ci.placeholder='CÓDIGO';
+      ci.setAttribute('autocomplete','off'); ci.setAttribute('autocapitalize','characters'); ci.setAttribute('spellcheck','false');
+      var jb=el('button','','Unirme'); jb.type='button';
+      row.appendChild(nb); row.appendChild(ci); row.appendChild(jb);
+      rb.appendChild(row);
+      nb.addEventListener('click',crear);
+      jb.addEventListener('click',function(){ unirse(ci.value); });
+      ci.addEventListener('input',function(){ ci.value=ci.value.toUpperCase().replace(/[^A-Z]/g,''); });
+      ci.addEventListener('keydown',function(e){ if(e.key==='Enter') unirse(ci.value); });
+    }else{
+      var hd=el('div','rb-head');
+      var left=el('div'); left.appendChild(el('div','rb-lab','Ronda')); left.appendChild(el('div','rb-code',R.code));
+      var st=el('div','rb-st'); st.id='rb-st';
+      hd.appendChild(left); hd.appendChild(st);
+      rb.appendChild(hd);
+      var row2=el('div','rb-row');
+      var sh=el('button','','Compartir código'); sh.type='button';
+      var lv=el('button','','Salir de la ronda'); lv.type='button';
+      row2.appendChild(sh); row2.appendChild(lv);
+      rb.appendChild(row2);
+      sh.addEventListener('click',compartir);
+      lv.addEventListener('click',salir);
+      if(R.fin){
+        rb.appendChild(el('div','rb-fin',(R.fin.por||'Alguien')+' guardó esta partida. Ya no se puede editar.'));
+        var gb=el('button','','Guardar en mi historial y salir'); gb.type='button';
+        gb.addEventListener('click',guardarTerminadaYSalir);
+        rb.appendChild(gb);
+      }
+    }
+    var m=el('div','rb-msg'); m.id='rb-msg'; rb.appendChild(m);
+    renderStatus();
+  }
+
+  function enter(code,pos){
+    return rpc('estado_ronda',{p_codigo:code}).then(function(d){
+      if(!d) throw new Error('nada');
+      stopPoll();
+      var n=(d.hoyos===18)?18:9;
+      R={code:code,me:pos,queue:[],players:[],cambios:[],online:true,lastEdit:0,
+         game:{holes:n,tees:[d.tee1||'blanca',n===18?(d.tee2||d.tee1||'blanca'):null]}};
+      HOLES=n;
+      applyRemote(d);
+      store(RKEY,R);
+      renderRoundBar(); renderChanges(); renderGameBar(); setNote();
+      startPoll(); showTab('tarjeta');
+    });
+  }
+  function crear(){
+    if(busy||!needName()) return;
+    openSetup({cancelable:true,onDone:doCrear});
+  }
+  function doCrear(g){
+    if(busy) return;
+    busy=true; rbMsg('Creando ronda…',0);
+    rpc('crear_ronda',{p_nombre:prof.name.trim(),p_hcp:hcpNum(prof.hcp),p_hoyos:g.holes,p_tee1:g.tees[0],p_tee2:g.tees[1]})
+      .then(function(o){ return enter(o.codigo,o.pos); })
+      .then(function(){ busy=false; },function(e){ busy=false; rbMsg(friendly(e)); });
+  }
+  function unirse(code){
+    code=(code||'').toUpperCase().replace(/[^A-Z]/g,'');
+    if(code.length!==4){ rbMsg('El código tiene 4 letras.'); return; }
+    if(busy||!needName()) return;
+    busy=true; rbMsg('Buscando ronda…',0);
+    rpc('unirse_ronda',{p_codigo:code,p_nombre:prof.name.trim(),p_hcp:hcpNum(prof.hcp)})
+      .then(function(o){
+        if(!o){ busy=false; rbMsg('No existe una ronda con ese código.'); return; }
+        return enter(o.codigo,o.pos).then(function(){ busy=false; });
+      },function(e){ busy=false; rbMsg(friendly(e)); })
+      .then(null,function(e){ busy=false; rbMsg(friendly(e)); });
+  }
+  function salir(){
+    if(!R) return;
+    if(R.queue.length&&!confirm('Hay scores sin enviar (sin señal). Si sales ahora se pierden. ¿Salir?')) return;
+    stopPoll(); R=null;
+    try{ localStorage.removeItem(RKEY); }catch(e){}
+    HOLES=local.game?local.game.holes:9;
+    local.players.forEach(fixSc);
+    local.players[0].n=prof.name; local.players[0].hcp=prof.hcp;
+    s=local; build(); renderRoundBar(); renderChanges(); renderGameBar(); setNote();
+  }
+  function compartir(){
+    var txt='Únete a mi ronda en Yerbabonita con el código '+R.code+': '+location.href.split('#')[0];
+    if(navigator.share){ navigator.share({title:'Yerbabonita',text:txt}).catch(function(){}); return; }
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(function(){ rbMsg('Copiado. Pégalo en WhatsApp.'); },function(){ rbMsg('Código: '+R.code); });
+    }else rbMsg('Código: '+R.code);
+  }
+
+  /* ---------- Botones de la tarjeta ---------- */
+  var tg=document.getElementById('tg');
+  tg.checked=!!local.totals;
+  document.body.dataset.totals=local.totals?'on':'off';
+  tg.addEventListener('change',function(){
+    local.totals=tg.checked; document.body.dataset.totals=local.totals?'on':'off'; store(KEY,local);
+  });
+
+  document.getElementById('more').addEventListener('click',function(){
+    if(s.players.length>=MAXP) return;
+    if(!R){ local.players.push(blank()); save(); build(); return; }
+    if(busy) return; busy=true;
+    var my=R;
+    rpc('agregar_jugador',{p_codigo:my.code,p_nombre:'',p_hcp:null}).then(function(pos){
+      busy=false; if(R!==my) return;
+      R.players.push({pos:pos,n:'',hcp:'',sc:new Array(HOLES).fill('')});
+      store(RKEY,R); refreshView();
+    },function(e){ busy=false; rbMsg(friendly(e)); });
+  });
+  document.getElementById('less').addEventListener('click',function(){
+    if(s.players.length<=2) return;
+    var last=s.players[s.players.length-1];
+    var hasData=last.n||last.sc.some(function(v){return v!=='';});
+    if(R){
+      if(!confirm('Se quita a '+(last.n||'este jugador')+' de la ronda con lo que lleva anotado. ¿Sigo?')) return;
+      R.players=R.players.filter(function(p){ return p!==last; });
+      queueOp({t:'quitar',pos:last.pos}); refreshView();
+      return;
+    }
+    if(hasData&&!confirm('Se quita el último jugador con lo que lleva anotado. ¿Sigo?')) return;
+    local.players.pop(); save(); build();
+  });
+  document.getElementById('clear').addEventListener('click',function(){
+    if(R){
+      if(!confirm('Borra los scores de los '+HOLES+' hoyos para TODOS en la ronda. Los nombres se conservan. ¿Seguro?')) return;
+      R.players.forEach(function(p){ p.sc=new Array(HOLES).fill(''); });
+      queueOp({t:'limpiar'}); refreshView();
+      return;
+    }
+    if(!confirm('Borra los scores de los '+HOLES+' hoyos. Los nombres se conservan.')) return;
+    local.players.forEach(function(p){ p.sc=new Array(HOLES).fill(''); });
+    save(); build();
+  });
+
+
+  /* ---------- Guardar partida ---------- */
+  var HKEY='yerbabonita.perfil.historial', OKEY='yerbabonita.perfil.pendientes';
+  var hist=load(HKEY); if(!Array.isArray(hist)) hist=[];
+  var outbox=load(OKEY); if(!Array.isArray(outbox)) outbox=[];
+  function saveOutbox(){ store(OKEY,outbox); }
+  function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,8); }
+
+  var toastEl=document.getElementById('toast'), toastT=null;
+  function toast(t){
+    toastEl.textContent=t; toastEl.hidden=false;
+    if(toastT) clearTimeout(toastT);
+    toastT=setTimeout(function(){ toastEl.hidden=true; },3200);
+  }
+
+  var sheet=document.getElementById('sheet');
+  function closeSheet(){ sheet.hidden=true; sheet.innerHTML=''; }
+  function openSheet(fill){
+    sheet.innerHTML='';
+    var box=el('div','sheet-box'); fill(box);
+    sheet.appendChild(box); sheet.hidden=false;
+  }
+  sheet.addEventListener('click',function(e){ if(e.target===sheet) closeSheet(); });
+
+  function snapshot(){
+    var G=gameOf(), pl=[];
+    s.players.forEach(function(p,j){
+      var strokes=0,par=0,n=0;
+      for(var h=0;h<HOLES;h++){
+        var v=p.sc[h]===''?0:parseInt(p.sc[h],10);
+        if(v){ strokes+=v; par+=s.pars[h%9]; n++; }
+      }
+      if(!n&&!(p.n||'').trim()) return;                 // lugar vacío
+      pl.push({n:dispName(p,j),hcp:p.hcp==null?'':String(p.hcp),sc:p.sc.slice(),total:strokes,vs:strokes-par,played:n});
+    });
+    return {id:uid(),ts:new Date().toISOString(),holes:HOLES,tees:G.tees.slice(),pars:s.pars.slice(),code:R?R.code:null,players:pl};
+  }
+  function vsTxt(d){ return d===0?'E':(d>0?'+'+d:String(d)); }
+
+  function abrirGuardar(){
+    if(R&&R.fin) return;
+    var snap=snapshot();
+    if(!snap.players.some(function(p){return p.played>0;})){ toast('Anota al menos un hoyo antes de guardar.'); return; }
+    openSheet(function(box){
+      box.appendChild(el('div','sh-t','Guardar partida'));
+      var g=el('div','gb-l'); var gs=el('div','sh-s'); gs.appendChild(gameSummary(el('div','gb'),{holes:snap.holes,tees:snap.tees}));
+      box.appendChild(gs);
+      var list=el('div','sh-list');
+      snap.players.slice().sort(function(a,b){ return (b.played>0)-(a.played>0)||a.vs-b.vs; }).forEach(function(p){
+        var r=el('div','sh-r');
+        var l=el('span'); l.appendChild(document.createTextNode(p.n));
+        if(p.played<snap.holes) l.appendChild(el('em','','  '+p.played+'/'+snap.holes+' hoyos'));
+        var v=el('span'); v.appendChild(el('b','',String(p.total))); v.appendChild(el('em','','  '+(p.played?vsTxt(p.vs):'')));
+        r.appendChild(l); r.appendChild(v); list.appendChild(r);
+      });
+      box.appendChild(list);
+      if(snap.players.some(function(p){return p.played<snap.holes;})) box.appendChild(el('div','sh-warn','Hay hoyos sin anotar. Se guardará así.'));
+      box.appendChild(el('div','sh-note',R
+        ?'Se guarda en tu historial y la ronda queda terminada para todos (ya no se podrá editar). Después la tarjeta queda limpia para empezar otra.'
+        :(LIVE?'Se guarda en tu historial y en la base de datos. Después la tarjeta queda limpia para empezar otra.'
+               :'Se guarda en el historial de este celular. Después la tarjeta queda limpia para empezar otra.')));
+      var b1=el('button','prim','Guardar y empezar otra'); b1.type='button';
+      var b2=el('button','','Guardar y compartir imagen'); b2.type='button';
+      var b3=el('button','','Cancelar'); b3.type='button';
+      b1.addEventListener('click',function(){ guardar(snap,false); });
+      b2.addEventListener('click',function(){ guardar(snap,true); });
+      b3.addEventListener('click',closeSheet);
+      box.appendChild(b1); box.appendChild(b2); box.appendChild(b3);
+    });
+  }
+
+  function dejarRonda(){
+    stopPoll(); R=null; finShown=false;
+    try{ localStorage.removeItem(RKEY); }catch(e){}
+    HOLES=local.game?local.game.holes:9;
+    local.players.forEach(fixSc);
+    local.players[0].n=prof.name; local.players[0].hcp=prof.hcp;
+  }
+  function guardar(snap,withImage){
+    var img=null;
+    if(withImage){ try{ img=renderImage(snap); }catch(e){ img=null; } }   // se genera dentro del toque (para poder compartir)
+    closeSheet();
+    var por=editor();
+    snap.cloud=LIVE?'pend':'no';
+    if(R){
+      var code=R.code;
+      R.queue.forEach(function(op){ outbox.push({k:'op',code:code,op:op}); });
+      outbox.push({k:'terminar',code:code,por:por,eid:snap.id});
+      R.queue=[];
+      dejarRonda();
+    }else{
+      if(LIVE) outbox.push({k:'archivar',eid:snap.id,id:snap.id,hoyos:snap.holes,tee1:snap.tees[0],tee2:snap.tees[1],por:por,
+        jug:snap.players.map(function(p){ return {nombre:p.n,hcp:hcpNum(p.hcp),scores:p.sc.map(function(v){return v===''?null:+v;})}; })});
+      local.players.forEach(function(p){ p.sc=new Array(HOLES).fill(''); });   // tarjeta limpia
+    }
+    hist.unshift(snap); if(hist.length>100) hist.length=100;
+    store(HKEY,hist); saveOutbox(); store(KEY,local);
+    s=local; build(); renderRoundBar(); renderChanges(); renderGameBar(); setNote(); renderHist();
+    toast('Partida guardada ✓');
+    drain();
+    if(img) compartirImagen(img,snap);
+  }
+  function guardarTerminadaYSalir(){
+    var snap=snapshot(); snap.cloud='ok';
+    if(!hist.some(function(e){ return snap.code&&e.code===snap.code; })){
+      hist.unshift(snap); if(hist.length>100) hist.length=100; store(HKEY,hist);
+    }
+    dejarRonda(); store(KEY,local);
+    s=local; build(); renderRoundBar(); renderChanges(); renderGameBar(); setNote(); renderHist();
+    toast('Guardada en tu historial ✓');
+  }
+  document.getElementById('save').addEventListener('click',abrirGuardar);
+
+  /* ---------- Envíos pendientes (sin señal) ---------- */
+  var draining=false, drainTimer=null;
+  function runTask(t){
+    if(t.k==='op') return sendOpTo(t.code,t.op);
+    if(t.k==='terminar') return rpc('terminar_ronda',{p_codigo:t.code,p_editor:t.por});
+    if(t.k==='archivar') return rpc('archivar_partida',{p_id:t.id,p_hoyos:t.hoyos,p_tee1:t.tee1,p_tee2:t.tee2,p_jugadores:t.jug,p_editor:t.por});
+    return Promise.resolve();
+  }
+  function markCloud(t,val){
+    if(!t.eid) return;
+    for(var i=0;i<hist.length;i++){ if(hist[i].id===t.eid){ hist[i].cloud=val; store(HKEY,hist); renderHist(); break; } }
+  }
+  function drain(){
+    if(!LIVE||draining||!outbox.length) return;
+    draining=true; var t=outbox[0];
+    runTask(t).then(function(){
+      draining=false; outbox.shift(); saveOutbox(); markCloud(t,'ok'); drain();
+    },function(e){
+      draining=false;
+      if(e&&e.http&&e.http>=400&&e.http<500){ outbox.shift(); saveOutbox(); markCloud(t,'no'); drain(); return; }
+      if(!drainTimer) drainTimer=setTimeout(function(){ drainTimer=null; drain(); },15000);
+    });
+  }
+  window.addEventListener('online',drain);
+
+  /* ---------- Imagen de la tarjeta (para compartir) ---------- */
+  function renderImage(e){
+    var np=e.players.length, holes=e.holes, pars=e.pars||DEF;
+    var W=1080, M=44, rowH=56, band=210, nameH=84, labH=44;
+    var hasNeto=e.players.some(function(p){ return p.hcp!==''&&p.played===holes; });
+    var H=band+M+nameH+(holes===18?2:1)*labH+holes*rowH+rowH*2+(hasNeto?rowH:0)+M+56;
+    var c=document.createElement('canvas'); c.width=W; c.height=H;
+    var x=c.getContext('2d');
+    var PAPER='#F4F0E2', ALT='#EBE5D2', INK='#1C2B22', MUTE='#7C7767', LINE='#D6CDB4', TURF='#0B3B25';
+    x.fillStyle=PAPER; x.fillRect(0,0,W,H);
+    x.fillStyle=TURF; x.fillRect(0,0,W,band);
+    if(LOGO.complete&&LOGO.naturalWidth) x.drawImage(LOGO,M,34,142,142);
+    x.textBaseline='alphabetic';
+    x.fillStyle=PAPER; x.font='400 66px Georgia, serif'; x.fillText('Yerbabonita',M+172,92);
+    x.fillStyle='#A9BFAF'; x.font='30px Helvetica, Arial, sans-serif';
+    var d=new Date(e.ts);
+    x.fillText(isNaN(d.getTime())?'':d.toLocaleDateString('es',{day:'numeric',month:'long',year:'numeric'}),M+172,138);
+    var cfg=e.holes+' hoyos · '+(e.holes===18?'Vuelta 1 '+tee(e.tees[0]).name+' · Vuelta 2 '+tee(e.tees[1]).name:'Salida '+tee(e.tees[0]).name);
+    x.font='26px Helvetica, Arial, sans-serif'; x.fillText(cfg,M+172,176);
+
+    var holeW=90, parW=90, pw=(W-2*M-holeW-parW)/np, y=band+M;
+    function fit(t,w,font){ x.font=font; if(x.measureText(t).width<=w) return t; while(t.length>1&&x.measureText(t+'…').width>w) t=t.slice(0,-1); return t+'…'; }
+    // encabezado con nombres
+    x.textAlign='center'; x.fillStyle=INK;
+    e.players.forEach(function(p,j){
+      var cx=M+holeW+parW+pw*j+pw/2;
+      x.fillStyle=INK; x.fillText(fit(p.n,pw-10,'600 32px Georgia, serif'),cx,y+38);
+      if(p.hcp!==''){ x.fillStyle=MUTE; x.font='22px Helvetica, Arial, sans-serif'; x.fillText('hcp '+p.hcp,cx,y+66); }
+    });
+    x.fillStyle=MUTE; x.font='22px Helvetica, Arial, sans-serif';
+    x.fillText('H',M+holeW/2,y+58); x.fillText('Par',M+holeW+parW/2,y+58);
+    y+=nameH; x.fillStyle=TURF; x.fillRect(M,y-2,W-2*M,3);
+
+    function label(t,teeId){
+      x.textAlign='left';
+      x.fillStyle=tee(teeId).color; x.beginPath(); x.arc(M+14,y+labH/2+2,9,0,7); x.fill();
+      x.strokeStyle='rgba(0,0,0,.35)'; x.lineWidth=1.5; x.stroke();
+      x.fillStyle=MUTE; x.font='22px Helvetica, Arial, sans-serif'; x.fillText(t,M+36,y+labH/2+9);
+      y+=labH;
+    }
+    for(var h=0;h<holes;h++){
+      if(h===0) label((holes===18?'VUELTA 1 · ':'')+'SALIDA '+tee(e.tees[0]).name.toUpperCase(),e.tees[0]);
+      if(h===9) label('VUELTA 2 · SALIDA '+tee(e.tees[1]).name.toUpperCase(),e.tees[1]);
+      var par=pars[h%9];
+      if(par>3){ x.fillStyle=ALT; x.fillRect(M,y,W-2*M,rowH); }
+      x.fillStyle=LINE; x.fillRect(M,y+rowH-1,W-2*M,1);
+      x.textAlign='center'; x.fillStyle=INK; x.font='30px Helvetica, Arial, sans-serif';
+      x.fillText(String(h+1),M+holeW/2,y+38);
+      x.fillStyle=MUTE; x.fillText(String(par),M+holeW+parW/2,y+38);
+      e.players.forEach(function(p,j){
+        var v=p.sc[h]; if(v===''||v==null) return;
+        var n=+v, cx=M+holeW+parW+pw*j+pw/2;
+        x.fillStyle=n<par?'#1F7A4D':(n>=par+2?'#A3241C':INK);
+        x.font=(n<par||n>par?'600 ':'400 ')+'34px Helvetica, Arial, sans-serif';
+        x.fillText(String(n),cx,y+39);
+      });
+      y+=rowH;
+    }
+    // totales
+    x.fillStyle=TURF; x.fillRect(M,y,W-2*M,3);
+    var parTot=0; for(var q=0;q<holes;q++) parTot+=pars[q%9];
+    x.textAlign='center'; x.fillStyle=INK; x.font='600 32px Helvetica, Arial, sans-serif';
+    x.fillText('T',M+holeW/2,y+40); x.fillText(String(parTot),M+holeW+parW/2,y+40);
+    e.players.forEach(function(p,j){
+      var cx=M+holeW+parW+pw*j+pw/2;
+      x.fillStyle=INK; x.font='700 38px Helvetica, Arial, sans-serif'; x.fillText(p.played?String(p.total):'–',cx,y+42);
+    });
+    y+=rowH;
+    x.fillStyle=MUTE; x.font='24px Helvetica, Arial, sans-serif'; x.fillText('vs par',M+holeW+parW/2,y+32);
+    e.players.forEach(function(p,j){
+      var cx=M+holeW+parW+pw*j+pw/2;
+      x.fillStyle=p.vs<0?'#1F7A4D':(p.vs>0?'#A3241C':INK); x.font='600 30px Helvetica, Arial, sans-serif';
+      x.fillText(p.played?vsTxt(p.vs):'',cx,y+34);
+    });
+    y+=rowH;
+    if(hasNeto){
+      x.fillStyle=MUTE; x.font='24px Helvetica, Arial, sans-serif'; x.fillText('Neto',M+holeW+parW/2,y+32);
+      e.players.forEach(function(p,j){
+        if(p.hcp===''||p.played!==holes) return;
+        var cx=M+holeW+parW+pw*j+pw/2;
+        x.fillStyle=INK; x.font='600 30px Helvetica, Arial, sans-serif'; x.fillText(String(p.total-parseInt(p.hcp,10)),cx,y+34);
+      });
+      y+=rowH;
+    }
+    x.textAlign='center'; x.fillStyle=MUTE; x.font='italic 22px Georgia, serif';
+    x.fillText('Yerbabonita · Bosque Nativo',W/2,H-M+4);
+    var url=c.toDataURL('image/png');
+    var p2=url.split(','), bin=atob(p2[1]), n2=bin.length, arr=new Uint8Array(n2);
+    while(n2--) arr[n2]=bin.charCodeAt(n2);
+    return {url:url,blob:new Blob([arr],{type:'image/png'}),name:'yerbabonita-'+(e.ts||'').slice(0,10)+'.png'};
+  }
+  function compartirImagen(img){
+    var file=null; try{ file=new File([img.blob],img.name,{type:'image/png'}); }catch(x){}
+    if(file&&navigator.canShare&&navigator.canShare({files:[file]})){
+      navigator.share({files:[file],title:'Yerbabonita'}).catch(function(err){
+        if(err&&err.name==='AbortError') return;
+        verImagen(img);
+      });
+      return;
+    }
+    verImagen(img);
+  }
+  function verImagen(img){
+    openSheet(function(box){
+      box.appendChild(el('div','sh-t','Imagen de la tarjeta'));
+      box.appendChild(el('div','sh-s','Mantén presionada la imagen para guardarla o compartirla.'));
+      var im=document.createElement('img'); im.className='preview'; im.src=img.url; im.alt='Tarjeta de la partida';
+      box.appendChild(im);
+      var a=document.createElement('a'); a.className='dl'; a.href=img.url; a.download=img.name; a.textContent='Descargar imagen';
+      box.appendChild(a);
+      var cl=el('button','prim','Cerrar'); cl.type='button'; cl.addEventListener('click',closeSheet);
+      box.appendChild(cl);
+    });
+  }
+
+  /* ---------- Pestaña Partidas (historial) ---------- */
+  var histBox=document.getElementById('histlist');
+  function fmtDate(ts){
+    var d=new Date(ts); if(isNaN(d.getTime())) return '';
+    return d.toLocaleString('es',{day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit'});
+  }
+  function renderHist(){
+    if(!histBox) return;
+    histBox.innerHTML='';
+    if(!hist.length){
+      histBox.appendChild(el('div','note','Aún no hay partidas guardadas. Al terminar, toca "Guardar partida" al final de la tarjeta.'));
+      return;
+    }
+    hist.forEach(function(e){
+      var card=el('div','card hcard');
+      var top=el('div','hc-top');
+      top.appendChild(el('div','hc-date',fmtDate(e.ts)));
+      var tagTxt=!LIVE||e.cloud==='no'?'Solo en este celular':(e.cloud==='ok'?'☁ En la base de datos':'↻ Pendiente de subir');
+      top.appendChild(el('div','hc-tag',tagTxt));
+      card.appendChild(top);
+      card.appendChild(gameSummary(el('div','gb'),{holes:e.holes,tees:e.tees}));
+      var rank=el('div','hc-rank');
+      e.players.slice().sort(function(a,b){ return (b.played>0)-(a.played>0)||a.vs-b.vs; }).forEach(function(p){
+        var r=el('div','sh-r');
+        var l=el('span'); l.appendChild(document.createTextNode(p.n));
+        if(p.played<e.holes) l.appendChild(el('em','','  '+p.played+'/'+e.holes+' hoyos'));
+        var v=el('span'); v.appendChild(el('b','',String(p.total))); v.appendChild(el('em','','  '+(p.played?vsTxt(p.vs):'')));
+        r.appendChild(l); r.appendChild(v); rank.appendChild(r);
+      });
+      card.appendChild(rank);
+      var detail=el('div','hd'); detail.hidden=true;
+      var acts=el('div','hc-acts');
+      var bd=el('button','','Ver detalle'); bd.type='button';
+      var bi=el('button','','Imagen'); bi.type='button';
+      var bx=el('button','del','Borrar'); bx.type='button';
+      bd.addEventListener('click',function(){
+        if(detail.hidden&&!detail.firstChild) buildDetail(detail,e);
+        detail.hidden=!detail.hidden; bd.textContent=detail.hidden?'Ver detalle':'Ocultar';
+      });
+      bi.addEventListener('click',function(){ try{ compartirImagen(renderImage(e)); }catch(x){ toast('No se pudo crear la imagen.'); } });
+      bx.addEventListener('click',function(){
+        if(!confirm('¿Borrar esta partida del historial de este celular? Si ya está en la base de datos, se conserva allá.')) return;
+        hist=hist.filter(function(h){ return h.id!==e.id; }); store(HKEY,hist); renderHist();
+      });
+      acts.appendChild(bd); acts.appendChild(bi); acts.appendChild(bx);
+      card.appendChild(acts); card.appendChild(detail);
+      histBox.appendChild(card);
+    });
+  }
+  function buildDetail(box,e){
+    var np=e.players.length, pars=e.pars||DEF, g='1.8rem 1.8rem repeat('+np+',minmax(0,1fr))';
+    var hd=el('div','hd-row h'); hd.style.gridTemplateColumns=g;
+    hd.appendChild(el('div','','H')); hd.appendChild(el('div','','Par'));
+    e.players.forEach(function(p){ hd.appendChild(el('div','',p.n)); });
+    box.appendChild(hd);
+    for(var h=0;h<e.holes;h++){
+      if(h===0||h===9){
+        var lb=el('div','hd-lab'); var dot=el('span','vdot'); dot.style.background=tee(e.tees[h<9?0:1]).color;
+        lb.appendChild(dot); lb.appendChild(document.createTextNode((e.holes===18?'Vuelta '+(h<9?1:2)+' · ':'')+'Salida '+tee(e.tees[h<9?0:1]).name));
+        box.appendChild(lb);
+      }
+      var r=el('div','hd-row'+(pars[h%9]>3?' p4':'')); r.style.gridTemplateColumns=g;
+      r.appendChild(el('div','',String(h+1))); r.appendChild(el('div','',String(pars[h%9])));
+      e.players.forEach(function(p){ r.appendChild(el('div','',p.sc[h]===''||p.sc[h]==null?'–':String(p.sc[h]))); });
+      box.appendChild(r);
+    }
+    var parTot=0; for(var q=0;q<e.holes;q++) parTot+=pars[q%9];
+    var t=el('div','hd-row t'); t.style.gridTemplateColumns=g;
+    t.appendChild(el('div','','T')); t.appendChild(el('div','',String(parTot)));
+    e.players.forEach(function(p){ t.appendChild(el('div','',p.played?String(p.total):'–')); });
+    box.appendChild(t);
+  }
+
+  /* ---------- Pestaña Hoyos: info del campo ---------- */
+  var TEEKEY='yerbabonita.perfil.tee', TABKEY='yerbabonita.perfil.tab';
+  var teeId; try{ teeId=localStorage.getItem(TEEKEY); }catch(e){}
+  if(!COURSE.tees.some(function(t){return t.id===teeId;})) teeId='blanca';
+  if(gameOf()) teeId=gameOf().tees[0];
+  var halfSel=0;   // 0 = hoyos 1 a 9, 1 = hoyos 10 a 18
+
+  var teesBox=document.getElementById('tees'), info=document.getElementById('info'), halfBox=document.getElementById('halfs');
+
+  function buildInfo(){
+    var g=gameOf(), ig=document.getElementById('infogame');
+    if(g) gameSummary(ig,g);
+    else{ ig.innerHTML=''; ig.appendChild(el('span','','Aún no eliges partida (9 o 18 hoyos). Elígela en la pestaña Tarjeta.')); }
+
+    var t=tee(teeId);
+    teesBox.innerHTML='';
+    COURSE.tees.forEach(function(x){
+      var b=el('button','tee'); b.type='button';
+      b.setAttribute('aria-pressed',x.id===teeId?'true':'false');
+      var dot=el('span','dot'); dot.style.background=x.color;
+      b.appendChild(dot); b.appendChild(el('span','tn',x.name)); b.appendChild(el('span','tt',String(sum(x.d))));
+      b.addEventListener('click',function(){
+        teeId=x.id; try{ localStorage.setItem(TEEKEY,teeId); }catch(e){}
+        buildInfo();
+      });
+      teesBox.appendChild(b);
+    });
+
+    halfBox.innerHTML='';
+    ['Hoyos 1 a 9','Hoyos 10 a 18'].forEach(function(lbl,i){
+      var b=el('button','',lbl); b.type='button';
+      b.setAttribute('aria-pressed',i===halfSel?'true':'false');
+      b.addEventListener('click',function(){ halfSel=i; buildInfo(); });
+      halfBox.appendChild(b);
+    });
+
+    var hcps=halfSel===0?COURSE.hcpFront:COURSE.hcpBack;
+    var showHcp=hcps.some(function(v){return v!=null;});
+    info.innerHTML='';
+    var head=el('div','hi-row hi-head'+(showHcp?'':' nohcp'));
+    ['Hoyo','Par'].concat(showHcp?['Hcp']:[]).concat(['Distancia']).forEach(function(x){ head.appendChild(el('div','',x)); });
+    info.appendChild(head);
+    for(var h=0;h<9;h++){
+      var r=el('div','hi-row'+(DEF[h]>3?' par4':'')+(showHcp?'':' nohcp'));
+      r.appendChild(el('div','',String(h+1+halfSel*9)));
+      r.appendChild(el('div','',String(DEF[h])));
+      if(showHcp) r.appendChild(el('div','hi-mute',hcps[h]==null?'–':String(hcps[h])));
+      r.appendChild(el('div','hi-dist',String(t.d[h])));
+      info.appendChild(r);
+    }
+    var tot=el('div','hi-row hi-total'+(showHcp?'':' nohcp'));
+    tot.appendChild(el('div','','T'));
+    tot.appendChild(el('div','',String(sum(DEF))));
+    if(showHcp) tot.appendChild(el('div','hi-mute','–'));
+    tot.appendChild(el('div','',String(sum(t.d))));
+    info.appendChild(tot);
+    document.getElementById('infonote').textContent=
+      'Son los mismos 9 hoyos: en 18 hoyos se juegan dos veces (del 1 al 9 y del 10 al 18).'+
+      (showHcp&&hcps.some(function(v){return v==null;})?' Falta cargar el handicap de los hoyos 1 a 9.':'');
+  }
+
+  /* ---- Pestañas ---- */
+  var tabBtns=document.querySelectorAll('.tabs button');
+  function showTab(name){
+    document.body.dataset.tab=name;
+    Array.prototype.forEach.call(tabBtns,function(b){
+      b.setAttribute('aria-selected',b.dataset.tab===name?'true':'false');
+    });
+    document.getElementById('tab-hoyos').hidden=name!=='hoyos';
+    document.getElementById('tab-tarjeta').hidden=name!=='tarjeta';
+    document.getElementById('tab-perfil').hidden=name!=='perfil';
+    document.getElementById('tab-partidas').hidden=name!=='partidas';
+    try{ localStorage.setItem(TABKEY,name); }catch(e){}
+  }
+  Array.prototype.forEach.call(tabBtns,function(b){
+    b.addEventListener('click',function(){ showTab(b.dataset.tab); });
+  });
+  var startTab; try{ startTab=localStorage.getItem(TABKEY); }catch(e){}
+  showTab(startTab==='tarjeta'||startTab==='perfil'||startTab==='partidas'?startTab:'hoyos');
+
+  /* ---- Perfil ---- */
+  var pfName=document.getElementById('pf-name'), pfHcp=document.getElementById('pf-hcp');
+  pfName.value=prof.name; pfHcp.value=prof.hcp;
+  pfName.addEventListener('input',function(){
+    prof.name=pfName.value; saveProf();
+    if(R){
+      var m=meP();
+      if(m){ m.n=prof.name; store(RKEY,R); queueOp({t:'jug',pos:m.pos,nombre:m.n,hcp:hcpNum(m.hcp)}); }
+    }else{ local.players[0].n=prof.name; save(); }
+    if(!isEditing()) { s=R?viewFromRound():local; build(); }
+  });
+  pfHcp.addEventListener('input',function(){
+    var v=pfHcp.value.replace(/[^0-9]/g,'').slice(0,2); pfHcp.value=v;
+    prof.hcp=v; saveProf();
+    if(R){
+      var m=meP();
+      if(m){ m.hcp=v; store(RKEY,R); queueOp({t:'jug',pos:m.pos,nombre:m.n,hcp:hcpNum(v)}); }
+    }else{ local.players[0].hcp=v; save(); }
+    s=R?viewFromRound():local; build();
+  });
+
+  /* ---- Arranque ---- */
+  renderRoundBar(); renderChanges(); setNote();
+  build(); renderGameBar(); renderHist();
+  if(R) startPoll();
+  drain();
+})();
+</script>
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+}
+</script>
+</body>
+</html>

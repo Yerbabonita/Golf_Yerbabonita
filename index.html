@@ -34,7 +34,7 @@
     font-family:Georgia,"Times New Roman",serif;
     -webkit-tap-highlight-color:transparent;
   }
-  header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:12px}
+  header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:12px}
   h1{margin:0;font-size:27px;font-weight:400;letter-spacing:.01em;color:var(--paper)}
   .sub{margin-top:2px;font-size:13px;color:#A9BFAF;font-style:italic}
   .switch{display:flex;align-items:center;gap:7px;cursor:pointer;user-select:none;flex:none;padding-bottom:3px}
@@ -96,7 +96,8 @@
   .tabs button + button{border-left:1px solid #3F614F}
   .tabs button[aria-selected="true"]{background:var(--paper);color:var(--turf);font-weight:600}
   .tabs button[aria-selected="true"]:active{background:var(--paper)}
-  [data-tab="hoyos"] .switch,[data-tab="perfil"] .switch,[data-tab="partidas"] .switch{display:none}
+  [data-tab="mapa"] .switch,[data-tab="hoyos"] .switch,[data-tab="perfil"] .switch,[data-tab="partidas"] .switch{display:none}
+  .tabs[hidden]{display:none}
   .panel[hidden]{display:none}
 
   /* ---- Info de hoyos ---- */
@@ -175,6 +176,16 @@
   .sheet-box .vdot{border-color:rgba(0,0,0,.35)}
   .actions button:disabled{opacity:.35;cursor:default}
   .hcpTag:empty{display:none}
+  .hi-tap{cursor:pointer;-webkit-tap-highlight-color:rgba(11,59,37,.12)}
+  .hi-tap:active{background:rgba(11,59,37,.08)}
+  .hi-h{display:flex;align-items:center;justify-content:center;gap:3px}
+  .hi-h .chev{font-style:normal;color:var(--muted);font-size:18px;line-height:1;transition:transform .15s}
+  .hi-tap.open .chev{transform:rotate(90deg)}
+  .hi-det{border-bottom:1px solid var(--line);padding:8px 6px 12px;background:rgba(11,59,37,.04)}
+  .hi-det[hidden]{display:none}
+  .hi-cap{font-family:var(--num);font-size:12.5px;color:var(--muted);margin-bottom:6px;text-align:left}
+  .hi-img{display:block;width:100%;height:auto;border-radius:3px;border:1px solid var(--line);background:#fff}
+  .hi-nofoto{font-family:var(--num);font-size:13px;color:var(--muted);padding:16px 0;text-align:center}
   .pf-locked{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-family:Georgia,serif;font-size:22px}
   .pf-locked .pf-lock{font-size:16px}
   .pf-help{font-family:var(--num);font-size:12px;color:var(--muted);line-height:1.45;margin-top:5px}
@@ -189,6 +200,20 @@
   .sheet-box .sh-err{font-size:12.5px;color:#A3241C;min-height:1em;margin-top:6px}
   .tabs button{font-size:13px;padding:11px 2px}
   [data-tab="panel"] .switch{display:none}
+  /* ---- Botón de perfil (arriba a la derecha) y navegación de la cuenta ---- */
+  .hright{display:flex;flex-direction:column;align-items:flex-end;gap:8px;min-width:0}
+  button.profbtn{flex:none;width:42px;height:42px;border-radius:50%;padding:0;display:flex;align-items:center;justify-content:center;background:var(--paper);color:var(--turf);border:2px solid var(--paper);font-family:Georgia,serif;font-size:20px;line-height:1}
+  button.profbtn svg{width:22px;height:22px}
+  button.profbtn[aria-pressed="true"]{border-color:var(--gold);box-shadow:0 0 0 2px rgba(200,169,81,.35)}
+  .subhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 0 8px;font-family:var(--num);font-size:13px;color:#A9BFAF}
+  .subhead button{flex:none;padding:6px 12px;font-size:13px}
+  /* ---- Mapa del campo ---- */
+  .map-wrap{position:relative;overflow:hidden;border-radius:4px;background:#0a2f1e;border:1px solid #3F614F;touch-action:none;user-select:none;-webkit-user-select:none}
+  .map-stage{transform-origin:0 0;will-change:transform}
+  .map-img{display:block;width:100%;height:auto;pointer-events:none;-webkit-user-drag:none}
+  .map-ctl{display:flex;gap:8px;margin-top:8px}
+  .map-ctl button{flex:1;padding:10px 4px;font-size:15px}
+  .map-hint{font-family:var(--num);font-size:12px;color:#A9BFAF;margin-top:8px;text-align:center}
   /* ---- Panel de administración ---- */
   .pn-lock{padding:16px 14px;font-family:var(--num)}
   .pn-lock h2{font-family:Georgia,serif;font-weight:400;font-size:22px;margin:0 0 4px}
@@ -364,20 +389,34 @@
       <div class="sub" id="subtitle">9 hoyos, par 29</div>
     </div>
   </div>
-  <label class="switch">
-    <input type="checkbox" id="tg" checked>
-    <span class="track"><span class="knob"></span></span>
-    <span>Totales</span>
-  </label>
+  <div class="hright">
+    <button class="profbtn" id="profbtn" type="button" aria-pressed="false" aria-label="Perfil y cuenta" title="Perfil"></button>
+    <label class="switch">
+      <input type="checkbox" id="tg" checked>
+      <span class="track"><span class="knob"></span></span>
+      <span>Totales</span>
+    </label>
+  </div>
 </header>
 
-<div class="tabs" role="tablist">
+<div class="tabs" id="maintabs" role="tablist">
+  <button role="tab" id="tb-mapa" aria-selected="false" aria-controls="tab-mapa" data-tab="mapa">Mapa del campo</button>
   <button role="tab" id="tb-hoyos" aria-selected="true" aria-controls="tab-hoyos" data-tab="hoyos">Hoyos</button>
   <button role="tab" id="tb-tarjeta" aria-selected="false" aria-controls="tab-tarjeta" data-tab="tarjeta">Tarjeta</button>
-  <button role="tab" id="tb-partidas" aria-selected="false" aria-controls="tab-partidas" data-tab="partidas">Partidas</button>
-  <button role="tab" id="tb-panel" aria-selected="false" aria-controls="tab-panel" data-tab="panel">Panel</button>
-  <button role="tab" id="tb-perfil" aria-selected="false" aria-controls="tab-perfil" data-tab="perfil">Perfil</button>
 </div>
+
+<div id="subnav" hidden>
+  <div class="subhead"><button id="pf-back" type="button">‹ Volver</button><span>Mi cuenta</span></div>
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tb-partidas" aria-selected="false" aria-controls="tab-partidas" data-tab="partidas">Partidas</button>
+    <button role="tab" id="tb-panel" aria-selected="false" aria-controls="tab-panel" data-tab="panel">Stats</button>
+    <button role="tab" id="tb-perfil" aria-selected="false" aria-controls="tab-perfil" data-tab="perfil">Perfil</button>
+  </div>
+</div>
+
+<section class="panel" id="tab-mapa" role="tabpanel" aria-labelledby="tb-mapa" hidden>
+  <div id="mapabox"></div>
+</section>
 
 <section class="panel" id="tab-hoyos" role="tabpanel" aria-labelledby="tb-hoyos">
   <div class="gb infogame" id="infogame"></div>
@@ -481,7 +520,7 @@
     if(v!=null) return v;
     return hcpParse(holes===18?prof.hcp18:prof.hcp9);
   }
-  function syncMeLocal(){ var m=local.players[0]; m.n=myDisp(); m.real=prof.name; m.hcp=hcpStr(myHcp(HOLES===18?18:9)); }
+  function syncMeLocal(){ var m=local.players[0]; m.n=myDisp(); m.real=prof.name; m.hcp=hcpStr(myHcp(HOLES===18?18:9)); if(typeof updateProfBtn==='function') updateProfBtn(); }
   function fixSc(p){ if(!p.sc||p.sc.length!==HOLES) p.sc=new Array(HOLES).fill(''); if(p.hcp==null) p.hcp=''; if(p.tees===undefined) p.tees=null; }
 
   var prof=load(PKEY);
@@ -1189,7 +1228,7 @@
   }
   function needName(){
     if(prof.name.trim()&&prof.locked) return true;
-    rbMsg(prof.name.trim()?'Primero confirma tu nombre en Perfil: una vez guardado no se puede cambiar.':'Primero escribe tu nombre en Perfil: una vez guardado no se puede cambiar.');
+    rbMsg(prof.name.trim()?'Primero confirma tu nombre en Perfil (botón de arriba a la derecha): una vez guardado no se puede cambiar.':'Primero escribe tu nombre en Perfil (botón de arriba a la derecha): una vez guardado no se puede cambiar.');
     showTab('perfil'); var pn=document.getElementById('pf-name'); if(pn) pn.focus();
     return false;
   }
@@ -2478,6 +2517,17 @@
 
   var teesBox=document.getElementById('tees'), info=document.getElementById('info'), halfBox=document.getElementById('halfs');
 
+  // Imagen de cada hoyo: archivos hoyo-1.webp ... hoyo-9.webp junto a index.html (los mismos 9 hoyos sirven para 1-9 y 10-18)
+  var HI_OPEN={};
+  function fillHole(det,h,num,t){
+    det.innerHTML='';
+    det.appendChild(el('div','hi-cap','Hoyo '+num+' · par '+DEF[h]+' · '+t.d[h]+' desde la salida '+t.name.toLowerCase()));
+    var img=document.createElement('img');
+    img.className='hi-img'; img.alt='Imagen del hoyo '+num; img.loading='lazy';
+    img.onerror=function(){ if(img.parentNode) img.parentNode.replaceChild(el('div','hi-nofoto','Aún no hay imagen de este hoyo.'),img); };
+    img.src='hoyo-'+(h+1)+'.webp';
+    det.appendChild(img);
+  }
   function buildInfo(){
     var g=gameOf(), ig=document.getElementById('infogame');
     if(g) gameSummary(ig,g,teesVaried());
@@ -2512,12 +2562,26 @@
     ['Hoyo','Par'].concat(showHcp?['Hcp']:[]).concat(['Distancia']).forEach(function(x){ head.appendChild(el('div','',x)); });
     info.appendChild(head);
     for(var h=0;h<9;h++){
-      var r=el('div','hi-row'+(DEF[h]>3?' par4':'')+(showHcp?'':' nohcp'));
-      r.appendChild(el('div','',String(h+1+halfSel*9)));
-      r.appendChild(el('div','',String(DEF[h])));
-      if(showHcp) r.appendChild(el('div','hi-mute',hcps[h]==null?'–':String(hcps[h])));
-      r.appendChild(el('div','hi-dist',String(t.d[h])));
-      info.appendChild(r);
+      (function(h){
+        var open=!!HI_OPEN[h], num=h+1+halfSel*9;
+        var r=el('div','hi-row hi-tap'+(DEF[h]>3?' par4':'')+(showHcp?'':' nohcp')+(open?' open':''));
+        r.setAttribute('role','button'); r.tabIndex=0; r.setAttribute('aria-expanded',open?'true':'false');
+        var c0=el('div','hi-h'); c0.appendChild(el('i','chev','›')); c0.appendChild(document.createTextNode(String(num))); r.appendChild(c0);
+        r.appendChild(el('div','',String(DEF[h])));
+        if(showHcp) r.appendChild(el('div','hi-mute',hcps[h]==null?'–':String(hcps[h])));
+        r.appendChild(el('div','hi-dist',String(t.d[h])));
+        var det=el('div','hi-det'); det.hidden=!open;
+        if(open) fillHole(det,h,num,t);
+        function toggle(){
+          HI_OPEN[h]=!HI_OPEN[h];
+          r.classList.toggle('open',HI_OPEN[h]); r.setAttribute('aria-expanded',HI_OPEN[h]?'true':'false');
+          det.hidden=!HI_OPEN[h];
+          if(HI_OPEN[h]&&!det.firstChild) fillHole(det,h,num,t);
+        }
+        r.addEventListener('click',toggle);
+        r.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+        info.appendChild(r); info.appendChild(det);
+      })(h);
     }
     var tot=el('div','hi-row hi-total'+(showHcp?'':' nohcp'));
     tot.appendChild(el('div','','T'));
@@ -2526,31 +2590,122 @@
     tot.appendChild(el('div','',String(sum(t.d))));
     info.appendChild(tot);
     document.getElementById('infonote').textContent=
-      'Son los mismos 9 hoyos: en 18 hoyos se juegan dos veces (del 1 al 9 y del 10 al 18).'+
+      'Toca un hoyo para ver su imagen. Son los mismos 9 hoyos: en 18 hoyos se juegan dos veces (del 1 al 9 y del 10 al 18).'+
       (showHcp&&hcps.some(function(v){return v==null;})?' Falta cargar el handicap de los hoyos 1 a 9.':'');
   }
 
-  /* ---- Pestañas ---- */
+  /* ---- Navegación: barra principal (Mapa, Hoyos, Tarjeta) y área de cuenta (Partidas, Stats, Perfil) ---- */
+  var MAIN=['mapa','hoyos','tarjeta'], SUB=['partidas','panel','perfil'];
+  var SUBKEY='yerbabonita.perfil.subtab', lastMain='hoyos', lastSub='perfil';
   var tabBtns=document.querySelectorAll('.tabs button');
+  var maintabs=document.getElementById('maintabs'), subnav=document.getElementById('subnav'), profBtn=document.getElementById('profbtn');
   function showTab(name){
+    var inSub=SUB.indexOf(name)>=0;
+    if(inSub) lastSub=name; else lastMain=name;
     document.body.dataset.tab=name;
+    maintabs.hidden=inSub; subnav.hidden=!inSub;
+    profBtn.setAttribute('aria-pressed',inSub?'true':'false');
     Array.prototype.forEach.call(tabBtns,function(b){
       b.setAttribute('aria-selected',b.dataset.tab===name?'true':'false');
     });
-    document.getElementById('tab-hoyos').hidden=name!=='hoyos';
-    document.getElementById('tab-tarjeta').hidden=name!=='tarjeta';
-    document.getElementById('tab-perfil').hidden=name!=='perfil';
-    document.getElementById('tab-partidas').hidden=name!=='partidas';
-    document.getElementById('tab-panel').hidden=name!=='panel';
+    MAIN.concat(SUB).forEach(function(t){ document.getElementById('tab-'+t).hidden=(t!==name); });
+    if(name==='mapa') renderMapa();
     if(name==='panel') renderPanel();
     if(name==='perfil'){ renderPerfil(); refreshHcp(); }
-    try{ localStorage.setItem(TABKEY,name); }catch(e){}
+    try{ localStorage.setItem(inSub?SUBKEY:TABKEY,name); }catch(e){}
   }
   Array.prototype.forEach.call(tabBtns,function(b){
     b.addEventListener('click',function(){ showTab(b.dataset.tab); });
   });
-  var startTab; try{ startTab=localStorage.getItem(TABKEY); }catch(e){}
-  showTab(startTab==='tarjeta'||startTab==='perfil'||startTab==='partidas'||startTab==='panel'?startTab:'hoyos');
+  profBtn.addEventListener('click',function(){ showTab(SUB.indexOf(document.body.dataset.tab)>=0?lastMain:lastSub); });
+  document.getElementById('pf-back').addEventListener('click',function(){ showTab(lastMain); });
+  function updateProfBtn(){                       // inicial del apodo (o del nombre); sin nombre, un ícono
+    if(!profBtn) return;
+    var t=(myDisp()||'').trim();
+    profBtn.innerHTML='';
+    if(t) profBtn.textContent=t.charAt(0).toUpperCase();
+    else profBtn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></svg>';
+    profBtn.title=t?('Perfil de '+t):'Perfil';
+  }
+  updateProfBtn();
+  var startMain, startSub; try{ startMain=localStorage.getItem(TABKEY); startSub=localStorage.getItem(SUBKEY); }catch(e){}
+  if(SUB.indexOf(startSub)>=0) lastSub=startSub;
+  showTab(MAIN.indexOf(startMain)>=0?startMain:'hoyos');
+
+  /* ---- Mapa del campo: imagen con zoom y arrastre ---- */
+  var MAPA={built:false};
+  function renderMapa(){
+    var box=document.getElementById('mapabox');
+    if(MAPA.built) return;
+    MAPA.built=true;
+    box.innerHTML='';
+    var c=el('div','card pn-card'); c.appendChild(el('div','pn-empty','Cargando el mapa…')); box.appendChild(c);
+    var img=new Image();
+    img.onload=function(){ buildMapa(box,img); };
+    img.onerror=function(){
+      box.innerHTML='';
+      var c2=el('div','card pn-card'); c2.appendChild(el('h3','','Mapa del campo'));
+      c2.appendChild(el('div','pn-empty','Todavía no hay un mapa cargado. Cuando se agregue la imagen del campo (archivo mapa.webp) aparecerá aquí, con zoom y arrastre.'));
+      var rt=el('button','pn-toggle','Volver a intentar'); rt.type='button';
+      rt.addEventListener('click',function(){ MAPA.built=false; renderMapa(); });
+      c2.appendChild(rt); box.appendChild(c2);
+    };
+    img.src='mapa.webp';
+  }
+  function buildMapa(box,img){
+    box.innerHTML='';
+    var wrap=el('div','map-wrap'), stage=el('div','map-stage');
+    img.className='map-img'; img.alt='Mapa del campo'; stage.appendChild(img); wrap.appendChild(stage);
+    wrap.style.aspectRatio=img.naturalWidth+' / '+img.naturalHeight;
+    box.appendChild(wrap);
+    var ctl=el('div','map-ctl');
+    var bm=el('button','','−'), bp=el('button','','+'), br=el('button','','Restablecer');
+    [bm,bp,br].forEach(function(b){ b.type='button'; ctl.appendChild(b); });
+    box.appendChild(ctl);
+    box.appendChild(el('div','map-hint','Pellizca o usa + / − para acercar; arrastra para moverte; doble toque para acercar.'));
+    var st={s:1,x:0,y:0}, pts={}, last=null;
+    function clamp(){
+      var W=wrap.clientWidth, H=wrap.clientHeight;
+      st.s=Math.max(1,Math.min(6,st.s));
+      st.x=Math.min(0,Math.max(W-W*st.s,st.x)); st.y=Math.min(0,Math.max(H-H*st.s,st.y));
+    }
+    function apply(){ clamp(); stage.style.transform='translate('+st.x+'px,'+st.y+'px) scale('+st.s+')'; }
+    function zoomAt(f,cx,cy){                        // acerca/aleja manteniendo fijo el punto (cx,cy)
+      var ns=Math.max(1,Math.min(6,st.s*f)), k=ns/st.s;
+      st.x=cx-(cx-st.x)*k; st.y=cy-(cy-st.y)*k; st.s=ns; apply();
+    }
+    function rel(e){ var r=wrap.getBoundingClientRect(); return {x:e.clientX-r.left,y:e.clientY-r.top}; }
+    wrap.addEventListener('pointerdown',function(e){
+      wrap.setPointerCapture(e.pointerId); pts[e.pointerId]=rel(e);
+    });
+    wrap.addEventListener('pointermove',function(e){
+      if(!pts[e.pointerId]) return;
+      var prev=pts[e.pointerId], cur=rel(e), ids=Object.keys(pts);
+      if(ids.length===1){
+        st.x+=cur.x-prev.x; st.y+=cur.y-prev.y; pts[e.pointerId]=cur; apply();
+      }else if(ids.length===2){
+        var o=pts[ids.filter(function(i){ return +i!==e.pointerId; })[0]];
+        var d0=Math.hypot(prev.x-o.x,prev.y-o.y), d1=Math.hypot(cur.x-o.x,cur.y-o.y);
+        pts[e.pointerId]=cur;
+        if(d0>0) zoomAt(d1/d0,(cur.x+o.x)/2,(cur.y+o.y)/2);
+      }
+    });
+    function up(e){ delete pts[e.pointerId]; }
+    wrap.addEventListener('pointerup',function(e){
+      var t=Date.now(), p=rel(e);
+      if(last&&t-last.t<320&&Math.hypot(p.x-last.p.x,p.y-last.p.y)<24){
+        if(st.s>1.2){ st.s=1; st.x=0; st.y=0; apply(); } else zoomAt(2.5,p.x,p.y);
+        last=null;
+      }else last={t:t,p:p};
+      up(e);
+    });
+    wrap.addEventListener('pointercancel',up);
+    wrap.addEventListener('wheel',function(e){ e.preventDefault(); var p=rel(e); zoomAt(e.deltaY<0?1.2:1/1.2,p.x,p.y); },{passive:false});
+    bp.addEventListener('click',function(){ zoomAt(1.5,wrap.clientWidth/2,wrap.clientHeight/2); });
+    bm.addEventListener('click',function(){ zoomAt(1/1.5,wrap.clientWidth/2,wrap.clientHeight/2); });
+    br.addEventListener('click',function(){ st.s=1; st.x=0; st.y=0; apply(); });
+    window.addEventListener('resize',apply);
+  }
 
   /* ---- Perfil: nombre (fijo), apodo, handicap ---- */
   function pfField(label,forId){

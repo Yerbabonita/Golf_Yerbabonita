@@ -1,10 +1,11 @@
-var CACHE = 'yerbabonita-perfil-v4';
+var CACHE = 'yerbabonita-perfil-v5';
 var FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () {
-    return self.skipWaiting();
-  }));
+  e.waitUntil(caches.open(CACHE).then(function (c) {
+    // 'reload' salta la caché del navegador: se guarda siempre la versión más nueva
+    return c.addAll(FILES.map(function (u) { return new Request(u, { cache: 'reload' }); }));
+  }).then(function () { return self.skipWaiting(); }));
 });
 
 self.addEventListener('activate', function (e) {
@@ -13,17 +14,42 @@ self.addEventListener('activate', function (e) {
   }).then(function () { return self.clients.claim(); }));
 });
 
-// Cache primero: en el campo, sin señal, la tarjeta abre igual.
+// La página y el manifiesto: primero internet (así siempre ves la última versión).
+// Si no hay señal, o tarda más de 3,5 s, se abre la copia guardada.
+function networkFirst(req) {
+  var net = fetch(req.url, { cache: 'no-store' }).then(function (res) {
+    if (res && res.ok) {
+      var copy = res.clone();
+      caches.open(CACHE).then(function (c) { c.put(req, copy); });
+    }
+    return res;
+  });
+  var cached = caches.match(req).then(function (h) { return h || caches.match('./index.html'); });
+  var slow = new Promise(function (resolve) {
+    setTimeout(function () { cached.then(function (h) { if (h) resolve(h); }); }, 3500);
+  });
+  var safe = net.catch(function () {
+    return cached.then(function (h) { if (h) return h; throw new Error('sin conexión'); });
+  });
+  return Promise.race([safe, slow]);
+}
+
 self.addEventListener('fetch', function (e) {
-  if (e.request.method !== 'GET') return;
+  var req = e.request;
+  if (req.method !== 'GET') return;                       // los envíos a la base de datos no se tocan
+  var url = new URL(req.url);
+  if (url.origin !== location.origin) return;
+  var page = req.mode === 'navigate' || /\/(index\.html)?$/.test(url.pathname) || /\.webmanifest$/.test(url.pathname);
+  if (page) { e.respondWith(networkFirst(req)); return; }
+  // Íconos y demás: primero la copia guardada.
   e.respondWith(
-    caches.match(e.request).then(function (hit) {
+    caches.match(req).then(function (hit) {
       if (hit) return hit;
-      return fetch(e.request).then(function (res) {
+      return fetch(req).then(function (res) {
         var copy = res.clone();
-        caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+        caches.open(CACHE).then(function (c) { c.put(req, copy); });
         return res;
-      }).catch(function () { return caches.match('./index.html'); });
+      });
     })
   );
 });

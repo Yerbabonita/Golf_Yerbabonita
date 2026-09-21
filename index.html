@@ -230,7 +230,14 @@
   .pn-pl .dt{font-size:11.5px;color:var(--muted);line-height:1.5}
   .pn-round{border-top:1px solid var(--line);padding-top:8px;margin-top:10px}
   .pn-round .rh{display:flex;justify-content:space-between;align-items:baseline;font-size:13px}
-  .pn-round .rh b{font-family:Georgia,serif;font-weight:400;font-size:16px}
+  .pn-kpi .pn-sub{display:block;margin-top:3px;font-size:10.5px;line-height:1.3}
+  .pn-scroll{overflow-x:auto;margin-top:6px;-webkit-overflow-scrolling:touch}
+  .pn-wide{width:auto;min-width:100%}
+  .pn-wide th,.pn-wide td{white-space:nowrap;padding-left:8px;padding-right:8px}
+  .pn-wide td:first-child,.pn-wide th:first-child{position:sticky;left:0;background:var(--paper);z-index:1}
+  .pn-mini{font-size:10.5px;color:var(--muted)}
+  .pn-card button.pn-toggle{display:block;flex:none;width:auto;margin-top:8px;padding:6px 0;border:none;background:none;color:var(--turf);text-decoration:underline;font-size:12.5px;font-family:var(--num)}
+    .pn-round .rh b{font-family:Georgia,serif;font-weight:400;font-size:16px}
   .pn-medal{font-size:13px;line-height:1.7}
   .vrow{display:grid;align-items:center;padding:8px 0 2px}
   .vrow .vl{grid-column:1 / span 2;padding-left:4px;font-family:var(--num);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
@@ -1925,10 +1932,10 @@
   var PMES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 
   function pnAvg(a){ return a.length?a.reduce(function(x,y){return x+y;},0)/a.length:null; }
-  function pnNum(v,d){ return v==null?'–':v.toFixed(d==null?1:d); }
+  function pnNum(v,d){ return v==null?'–':v.toFixed(d==null?1:d).replace('.',','); }
   function pnSigned(v,d){
     if(v==null) return '–';
-    var t=Math.abs(v).toFixed(d==null?1:d);
+    var t=Math.abs(v).toFixed(d==null?1:d).replace('.',',');
     return v>0.049?'+'+t:(v<-0.049?'−'+t:'E');
   }
   function pnNeto(e){ return Math.round((e.total-e.hcp)*10)/10; }
@@ -1972,7 +1979,7 @@
         return;
       }
       PN.pin=pin; PN.data=d; PN.model=pnModel(d);
-      PN.sel={}; PN.model.players.slice(0,4).forEach(function(p){ PN.sel[p.key]=true; });
+      PN.tab='general';
       renderPanel();
     },function(){ onFail('Sin conexión. Intenta cuando tengas señal.'); });
   }
@@ -2020,12 +2027,12 @@
     entries.sort(function(a,b){ return a.f-b.f; });
     return {entries:entries,players:players,rondas:R};
   }
-  function pnSel(){ return PN.model.players.filter(function(p){ return PN.sel[p.key]; }); }
-
+  /* ----- Panel: información global del campo (no por jugador) ----- */
+  PN.tab='general';
   function renderDashboard(){
     var m=PN.model;
     var bar=el('div','pn-bar');
-    var g=new Date(PN.data.generado); 
+    var g=new Date(PN.data.generado);
     bar.appendChild(el('span','','Admin: '+(PN.data.admin||'')+(isNaN(g.getTime())?'':' · '+pnDate(g))));
     var pb=el('div','pb');
     var b1=el('button','','Actualizar'); b1.type='button'; b1.addEventListener('click',panelActualizar);
@@ -2036,21 +2043,17 @@
       var ce=el('div','card pn-card'); ce.appendChild(el('div','pn-empty','Aún no hay partidas guardadas. Cuando se guarden partidas, aquí aparecerán las estadísticas.'));
       panelBox.appendChild(ce); return;
     }
-
-    var chips=el('div','pn-chips');
-    function refreshChips(){
-      chips.innerHTML='';
-      m.players.forEach(function(p){
-        var b=el('button','pc'); b.type='button'; b.setAttribute('aria-pressed',PN.sel[p.key]?'true':'false');
-        var d=el('i'); d.style.background=p.color; b.appendChild(d); b.appendChild(document.createTextNode(p.name+' · '+p.rounds));
-        b.addEventListener('click',function(){ PN.sel[p.key]=!PN.sel[p.key]; refreshChips(); renderSecciones(); });
-        chips.appendChild(b);
+    var seg=el('div','seg');
+    [['general','General'],['comp','Competencias']].forEach(function(t){
+      var bt=el('button','',t[1]); bt.type='button'; bt.setAttribute('aria-pressed',PN.tab===t[0]?'true':'false');
+      bt.addEventListener('click',function(){
+        PN.tab=t[0];
+        Array.prototype.forEach.call(seg.children,function(x,i){ x.setAttribute('aria-pressed',(i===0)===(t[0]==='general')?'true':'false'); });
+        renderSecciones();
       });
-      var all=el('button','pl','Todos'); all.type='button'; all.addEventListener('click',function(){ m.players.forEach(function(p){ PN.sel[p.key]=true; }); refreshChips(); renderSecciones(); });
-      var none=el('button','pl','Ninguno'); none.type='button'; none.addEventListener('click',function(){ PN.sel={}; refreshChips(); renderSecciones(); });
-      chips.appendChild(all); chips.appendChild(none);
-    }
-    refreshChips(); panelBox.appendChild(chips);
+      seg.appendChild(bt);
+    });
+    panelBox.appendChild(seg);
     PN.body=el('div'); panelBox.appendChild(PN.body);
     renderSecciones();
   }
@@ -2060,167 +2063,179 @@
     return c;
   }
   function renderSecciones(){
-    var m=PN.model, sel=pnSel(), body=PN.body; body.innerHTML='';
+    var m=PN.model, body=PN.body; body.innerHTML='';
+    if(PN.tab==='comp'){ body.appendChild(secCompetencias(m)); return; }
     body.appendChild(secResumen(m));
-    body.appendChild(secEvolucion(m,sel));
-    body.appendChild(secHoyos(m,sel));
-    body.appendChild(secResultados(m,sel));
-    body.appendChild(secSalidas(m,sel));
-    body.appendChild(secCompetencias(m));
+    body.appendChild(secHoyos(m));
+    body.appendChild(secResultados(m));
+    body.appendChild(secSalidas(m));
+    body.appendChild(secUltimas(m));
   }
-  function needSel(c){ c.appendChild(el('div','pn-empty','Elige al menos un jugador arriba.')); return c; }
+  function pnHeat(td,d){                                  // fondo verde (mejor que el par) o rojo (peor)
+    var al=Math.min(.5,Math.abs(d)*.4);
+    td.style.background=d>0.05?'rgba(178,58,72,'+al+')':(d<-0.05?'rgba(31,122,77,'+al+')':'transparent');
+  }
+  function pnNetoPer9(e){ return (e.total-e.hcp)*9/e.h; }
 
+  /* --- Resumen: KPIs del campo --- */
   function secResumen(m){
-    var c=pnCard('Resumen');
-    var rondas=Object.keys(m.rondas).length, comp=0, holes=0;
-    Object.keys(m.rondas).forEach(function(k){ if(m.rondas[k].m==='competencia') comp++; });
-    m.entries.forEach(function(e){ holes+=e.played; });
-    var first=m.entries[0].f, last=m.entries[m.entries.length-1].f;
+    var c=pnCard('Resumen del campo');
+    var done=m.entries.filter(function(e){ return e.complete; });
+    var conHcp=done.filter(function(e){ return e.hcp!=null; });
+    var comp=0; Object.keys(m.rondas).forEach(function(k){ if(m.rondas[k].m==='competencia') comp++; });
+    var gross=pnAvg(done.map(function(e){ return e.total*9/e.h; }));
+    var neto=pnAvg(conHcp.map(pnNetoPer9));
+    function sub(list,fn){
+      var a9=list.filter(function(e){ return e.h===9; }).map(fn), a18=list.filter(function(e){ return e.h===18; }).map(fn);
+      return '9 hoyos: '+(a9.length?pnNum(pnAvg(a9)):'–')+' · 18 hoyos: '+(a18.length?pnNum(pnAvg(a18)):'–');
+    }
     var g=el('div','pn-grid');
-    [[rondas,'partidas guardadas'],[m.players.length,'jugadores'],[holes,'hoyos anotados'],[comp,'competencias']].forEach(function(k){
-      var d=el('div','pn-kpi'); d.appendChild(el('b','',String(k[0]))); d.appendChild(el('span','',k[1])); g.appendChild(d);
+    [[String(Object.keys(m.rondas).length),'partidas guardadas',comp+' de competencia'],
+     [String(m.players.length),'jugadores',''],
+     [gross==null?'–':pnNum(gross),'score gross promedio',sub(done,function(e){ return e.total; })],
+     [neto==null?'–':pnNum(neto),'score neto promedio',neto==null?'sin handicap':sub(conHcp,function(e){ return e.total-e.hcp; })]
+    ].forEach(function(k){
+      var d=el('div','pn-kpi'); d.appendChild(el('b','',k[0])); d.appendChild(el('span','',k[1]));
+      if(k[2]) d.appendChild(el('span','pn-sub',k[2]));
+      g.appendChild(d);
     });
     c.appendChild(g);
-    c.appendChild(el('div','pn-s','Del '+pnDate(first)+' al '+pnDate(last)+'. Solo cuentan partidas ya guardadas; los jugadores sin nombre ("Yo", "Jug 2") se omiten.'));
+    var first=m.entries[0].f, last=m.entries[m.entries.length-1].f;
+    c.appendChild(el('div','pn-s','Del '+pnDate(first)+' al '+pnDate(last)+'. Los promedios grandes son por cada 9 hoyos (una partida de 18 se divide entre 2) y solo cuentan partidas completas; el neto necesita handicap. Los jugadores sin nombre ("Yo", "Jug 2") se omiten.'));
     return c;
   }
 
-  /* --- Evolución del score en el tiempo --- */
-  function pnLine(series){
-    var W=340,H=200,L=32,Rt=10,T=10,B=24, xs=[], ys=[];
-    series.forEach(function(s){ s.pts.forEach(function(q){ xs.push(q.x); ys.push(q.y); }); });
-    if(!xs.length) return null;
-    var x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
-    var y0=Math.min(0,Math.floor(Math.min.apply(null,ys)-0.5)), y1=Math.max(0,Math.ceil(Math.max.apply(null,ys)+0.5));
-    if(x1===x0){ x0-=43200000; x1+=43200000; }
-    var step=Math.max(1,Math.ceil((y1-y0)/5));
-    function X(v){ return L+(v-x0)/(x1-x0)*(W-L-Rt); }
-    function Y(v){ return T+(y1-v)/(y1-y0)*(H-T-B); }
-    var o='<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Evolución del score" style="display:block">';
-    for(var v=Math.ceil(y0/step)*step; v<=y1; v+=step){
-      o+='<line x1="'+L+'" x2="'+(W-Rt)+'" y1="'+Y(v)+'" y2="'+Y(v)+'" stroke="'+(v===0?'#0B3B25':'#D6CDB4')+'" stroke-width="'+(v===0?1.4:1)+'"/>';
-      o+='<text x="'+(L-5)+'" y="'+(Y(v)+4)+'" font-size="10" text-anchor="end" fill="#7C7767">'+(v>0?'+'+v:v===0?'par':v)+'</text>';
-    }
-    series.forEach(function(s){
-      var pts=s.pts.map(function(q){ return X(q.x).toFixed(1)+','+Y(q.y).toFixed(1); });
-      if(pts.length>1) o+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+s.color+'" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
-      s.pts.forEach(function(q){ o+='<circle cx="'+X(q.x).toFixed(1)+'" cy="'+Y(q.y).toFixed(1)+'" r="3.2" fill="'+s.color+'" stroke="#F4F0E2" stroke-width="1"/>'; });
-    });
-    o+='<text x="'+L+'" y="'+(H-6)+'" font-size="10" fill="#7C7767">'+pnDate(new Date(x0))+'</text>';
-    o+='<text x="'+(W-Rt)+'" y="'+(H-6)+'" font-size="10" text-anchor="end" fill="#7C7767">'+pnDate(new Date(x1))+'</text>';
-    return o+'</svg>';
+  /* --- Promedio por hoyo (todos los jugadores) --- */
+  function pnByHole(entries,pick){                        // hoyos 1-9 y 10-18 cuentan sobre los mismos 9 hoyos del campo
+    var a=[]; for(var i=0;i<9;i++) a.push([]);
+    entries.forEach(function(e){ e.sc.forEach(function(g,i){ if(g!=null&&(!pick||pick(e,i))) a[i%9].push({g:g,e:e,i:i}); }); });
+    return a;
   }
-  function secEvolucion(m,sel){
-    var c=pnCard('Evolución del score','Diferencia contra el par por cada 9 hoyos (una partida de 18 se divide entre 2). Solo partidas completas del jugador. Más abajo es mejor.');
-    if(!sel.length) return needSel(c);
-    var series=sel.map(function(p){
-      var es=m.entries.filter(function(e){ return e.key===p.key&&e.complete; });
-      return {color:p.color,name:p.name,es:es,pts:es.map(function(e){ return {x:e.f.getTime(),y:e.vs*9/e.h}; })};
-    });
-    var svg=pnLine(series);
-    if(!svg){ c.appendChild(el('div','pn-empty','Aún no hay partidas completas de los jugadores elegidos.')); return c; }
-    var box=el('div'); box.innerHTML=svg; c.appendChild(box);
+  function secHoyos(m){
+    var c=pnCard('Promedio por hoyo','Golpes promedio de todos los jugadores en cada hoyo. Verde = mejor que el par, rojo = peor. Los hoyos 10 a 18 cuentan con los mismos 9 hoyos del campo.');
+    var a=pnByHole(m.entries);
     var tb=document.createElement('table'); tb.className='pn-tbl';
-    tb.innerHTML='<tr><th>Jugador</th><th>Partidas</th><th>Promedio</th><th>Mejor</th><th>Últimas 5</th></tr>';
-    series.forEach(function(s){
-      var ys=s.pts.map(function(q){ return q.y; }), tr=document.createElement('tr');
-      var td=document.createElement('td'); var dot=el('i'); dot.style.cssText='display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px;background:'+s.color;
-      td.appendChild(dot); td.appendChild(document.createTextNode(s.name)); tr.appendChild(td);
-      [String(ys.length),pnSigned(pnAvg(ys)),pnSigned(ys.length?Math.min.apply(null,ys):null),pnSigned(pnAvg(ys.slice(-5)))].forEach(function(t){
-        var d=document.createElement('td'); d.textContent=t; tr.appendChild(d);
-      });
+    tb.innerHTML='<tr><th>Hoyo</th><th>Par</th><th class="hm">Promedio</th><th>vs par</th><th>Mejor</th><th>Peor</th><th>Datos</th></tr>';
+    var tot=0, totOk=true;
+    for(var i=0;i<9;i++){
+      var gs=a[i].map(function(x){ return x.g; }), av=pnAvg(gs), tr=document.createElement('tr');
+      var cells=[String(i+1),String(DEF[i]),av==null?'–':av.toFixed(2).replace('.',','),av==null?'–':pnSigned(av-DEF[i],2),gs.length?String(Math.min.apply(null,gs)):'–',gs.length?String(Math.max.apply(null,gs)):'–',String(gs.length)];
+      cells.forEach(function(t,k){ var td=document.createElement('td'); td.textContent=t; if(k===2){ td.className='hm'; if(av!=null) pnHeat(td,av-DEF[i]); } tr.appendChild(td); });
       tb.appendChild(tr);
-    });
+      if(av==null) totOk=false; else tot+=av;
+    }
+    if(totOk){
+      var tr2=document.createElement('tr'); tr2.style.fontWeight='600';
+      [ 'Suma','29',tot.toFixed(1).replace('.',','),pnSigned(tot-29,1),'','',''].forEach(function(t,k){ var td=document.createElement('td'); td.textContent=t; if(k===2) td.className='hm'; tr2.appendChild(td); });
+      tb.appendChild(tr2);
+    }
     c.appendChild(tb);
     return c;
   }
 
-  /* --- Promedio por hoyo --- */
-  function pnHoleAvg(entries){
-    var a=[]; for(var i=0;i<9;i++) a.push([]);
-    entries.forEach(function(e){ e.sc.forEach(function(g,i){ if(g!=null) a[i%9].push(g); }); });
-    return a;
-  }
-  function secHoyos(m,sel){
-    var c=pnCard('Promedio por hoyo','Golpes promedio en cada hoyo. Verde = mejor que el par, rojo = peor. Los hoyos 10 a 18 cuentan con los mismos 9 hoyos del campo.');
-    if(!sel.length) return needSel(c);
-    var cols=sel.map(function(p){ return {name:p.name,color:p.color,a:pnHoleAvg(m.entries.filter(function(e){ return e.key===p.key; }))}; });
-    cols.push({name:'Grupo',color:'#7C7767',a:pnHoleAvg(m.entries)});
-    var tb=document.createElement('table'); tb.className='pn-tbl';
-    var hd='<tr><th>Hoyo</th>'; cols.forEach(function(k){ hd+='<th class="hm">'+esc(k.name)+'</th>'; }); tb.innerHTML=hd+'</tr>';
+  /* --- Birdies, pares y bogeys por hoyo --- */
+  function pnCat(d){ return d<=-2?0:(d===-1?1:(d===0?2:(d===1?3:4))); }
+  function secResultados(m){
+    var c=pnCard('Birdies, pares y bogeys por hoyo','En cada hoyo, qué porcentaje de las veces se hizo cada resultado (todos los jugadores).');
+    var leg=el('div','pn-leg');
+    PCATS.forEach(function(k){ var sp=el('span'); var i=el('i'); i.style.background=k[1]; sp.appendChild(i); sp.appendChild(document.createTextNode(k[0])); leg.appendChild(sp); });
+    c.appendChild(leg);
+    var a=pnByHole(m.entries);
     for(var i=0;i<9;i++){
-      var tr=document.createElement('tr'), t0=document.createElement('td'); t0.textContent=(i+1)+' · par '+DEF[i]; tr.appendChild(t0);
-      cols.forEach(function(k){
-        var td=document.createElement('td'); td.className='hm';
-        var av=pnAvg(k.a[i]);
-        if(av==null){ td.textContent='–'; }
-        else{
-          var d=av-DEF[i]; td.textContent=av.toFixed(1); td.title=k.a[i].length+' hoyos anotados';
-          var al=Math.min(.5,Math.abs(d)*.4);
-          td.style.background=d>0.05?'rgba(178,58,72,'+al+')':(d<-0.05?'rgba(31,122,77,'+al+')':'transparent');
-        }
+      var cnt=[0,0,0,0,0], n=a[i].length;
+      a[i].forEach(function(x){ cnt[pnCat(x.g-DEF[i])]++; });
+      var w=el('div','pn-pl');
+      w.appendChild(el('div','nm','Hoyo '+(i+1)+' · par '+DEF[i]+' · '+n+' datos'));
+      if(!n){ w.appendChild(el('div','dt','Sin datos.')); c.appendChild(w); continue; }
+      var bar=el('div','pn-bar100');
+      cnt.forEach(function(v,k){ if(!v) return; var sg=el('span'); sg.style.width=(v/n*100)+'%'; sg.style.background=PCATS[k][1]; sg.title=PCATS[k][0]+': '+v; bar.appendChild(sg); });
+      w.appendChild(bar);
+      var pc=function(v){ return Math.round(v/n*100)+'%'; };
+      w.appendChild(el('div','dt','Águila '+pc(cnt[0])+' · Birdie '+pc(cnt[1])+' · Par '+pc(cnt[2])+' · Bogey '+pc(cnt[3])+' · Doble o peor '+pc(cnt[4])));
+      c.appendChild(w);
+    }
+    return c;
+  }
+
+  /* --- Rendimiento por color de salida, hoyo por hoyo --- */
+  function secSalidas(m){
+    var c=pnCard('Rendimiento por color de salida','Golpes promedio en cada hoyo según el color desde el que se salió. Verde = mejor que el par, rojo = peor. En 18 hoyos cada vuelta cuenta con su color.');
+    var perTee={};
+    COURSE.tees.forEach(function(t){
+      perTee[t.id]=pnByHole(m.entries,function(e,i){ return (e.tees[i>=9?1:0]||e.tees[0])===t.id; });
+    });
+    var cols=COURSE.tees.filter(function(t){ return perTee[t.id].some(function(a){ return a.length; }); });
+    if(!cols.length){ c.appendChild(el('div','pn-empty','Aún no hay datos.')); return c; }
+    var tb=document.createElement('table'); tb.className='pn-tbl';
+    var hd=document.createElement('tr'); hd.innerHTML='<th>Hoyo</th><th>Par</th>';
+    cols.forEach(function(t){ var th=document.createElement('th'); th.className='hm'; var d=el('i'); d.style.cssText='display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;border:1px solid rgba(0,0,0,.3);background:'+t.color; th.appendChild(d); th.appendChild(document.createTextNode(t.name)); hd.appendChild(th); });
+    tb.appendChild(hd);
+    var tot={}; cols.forEach(function(t){ tot[t.id]={sum:0,ok:true}; });
+    for(var i=0;i<9;i++){
+      var tr=document.createElement('tr'), t0=document.createElement('td'), t1=document.createElement('td');
+      t0.textContent=String(i+1); t1.textContent=String(DEF[i]); tr.appendChild(t0); tr.appendChild(t1);
+      cols.forEach(function(t){
+        var td=document.createElement('td'); td.className='hm'; var arr=perTee[t.id][i], av=pnAvg(arr.map(function(x){ return x.g; }));
+        if(av==null){ td.textContent='–'; tot[t.id].ok=false; }
+        else{ td.textContent=av.toFixed(1).replace('.',','); td.title=arr.length+' datos'; pnHeat(td,av-DEF[i]); tot[t.id].sum+=av; }
         tr.appendChild(td);
       });
       tb.appendChild(tr);
     }
+    var tr2=document.createElement('tr'); tr2.style.fontWeight='600';
+    var a0=document.createElement('td'); a0.textContent='Suma'; var a1=document.createElement('td'); a1.textContent='29'; tr2.appendChild(a0); tr2.appendChild(a1);
+    cols.forEach(function(t){ var td=document.createElement('td'); td.className='hm'; td.textContent=tot[t.id].ok?tot[t.id].sum.toFixed(1).replace('.',',')+' ('+pnSigned(tot[t.id].sum-29,1)+')':'–'; tr2.appendChild(td); });
+    tb.appendChild(tr2);
     c.appendChild(tb);
     return c;
   }
 
-  /* --- Birdies, pares y bogeys --- */
-  function pnCat(d){ return d<=-2?0:(d===-1?1:(d===0?2:(d===1?3:4))); }
-  function secResultados(m,sel){
-    var c=pnCard('Birdies, pares y bogeys','Todos los hoyos anotados de cada jugador, comparados con el par.');
-    if(!sel.length) return needSel(c);
-    var leg=el('div','pn-leg');
-    PCATS.forEach(function(k){ var sp=el('span'); var i=el('i'); i.style.background=k[1]; sp.appendChild(i); sp.appendChild(document.createTextNode(k[0])); leg.appendChild(sp); });
-    c.appendChild(leg);
-    sel.forEach(function(p){
-      var cnt=[0,0,0,0,0], n=0, ones=0;
-      m.entries.forEach(function(e){ if(e.key!==p.key) return; e.sc.forEach(function(g,i){ if(g==null) return; cnt[pnCat(g-DEF[i%9])]++; n++; if(g===1) ones++; }); });
-      var w=el('div','pn-pl'); var nm=el('div','nm'); var dot=el('i'); dot.style.background=p.color; nm.appendChild(dot); nm.appendChild(document.createTextNode(p.name+' · '+n+' hoyos')); w.appendChild(nm);
-      if(!n){ w.appendChild(el('div','dt','Sin hoyos anotados.')); c.appendChild(w); return; }
-      var bar=el('div','pn-bar100');
-      cnt.forEach(function(v,i){ if(!v) return; var sg=el('span'); sg.style.width=(v/n*100)+'%'; sg.style.background=PCATS[i][1]; sg.title=PCATS[i][0]+': '+v; bar.appendChild(sg); });
-      w.appendChild(bar);
-      var pc=function(v){ return Math.round(v/n*100)+'%'; };
-      w.appendChild(el('div','dt','Águilas o mejor '+cnt[0]+' ('+pc(cnt[0])+') · Birdies '+cnt[1]+' ('+pc(cnt[1])+') · Pares '+cnt[2]+' ('+pc(cnt[2])+') · Bogeys '+cnt[3]+' ('+pc(cnt[3])+') · Dobles o peor '+cnt[4]+' ('+pc(cnt[4])+')'+(ones?' · Hoyos en uno: '+ones:'')));
-      c.appendChild(w);
-    });
-    return c;
-  }
-
-  /* --- Rendimiento por color de salida --- */
-  function secSalidas(m,sel){
-    var c=pnCard('Rendimiento por color de salida','Cada vuelta de 9 hoyos completa cuenta por separado y se compara con el par de 9 hoyos ('+sum(DEF)+'). Más abajo es mejor.');
-    if(!sel.length) return needSel(c);
-    sel.forEach(function(p){
-      var by={};
-      m.entries.forEach(function(e){
-        if(e.key!==p.key) return;
-        for(var k=0;k<(e.h===18?2:1);k++){
-          var seg=e.sc.slice(k*9,k*9+9);
-          if(seg.some(function(g){ return g==null; })) continue;
-          var v=seg.reduce(function(a,b){return a+b;},0)-sum(DEF), t=e.tees[k]||e.tees[0];
-          (by[t]=by[t]||[]).push(v);
+  /* --- Últimas 18 partidas: gross y neto de cada jugador --- */
+  function secUltimas(m){
+    var c=pnCard('Últimas 18 partidas','Score gross / neto de cada jugador en cada partida. Solo se muestran partidas completas del jugador; el neto necesita handicap. Desliza hacia los lados para ver a todos los jugadores.');
+    var codes=Object.keys(m.rondas).sort(function(a,b){ return m.rondas[b].f-m.rondas[a].f; }).slice(0,18);
+    var byR={}, keys={};
+    m.entries.forEach(function(e){ (byR[e.c]=byR[e.c]||{})[e.key]=e; });
+    codes.forEach(function(cd){ Object.keys(byR[cd]||{}).forEach(function(k){ keys[k]=byR[cd][k].name; }); });
+    var pl=Object.keys(keys).sort(function(a,b){ return keys[a].localeCompare(keys[b]); });
+    if(!codes.length||!pl.length){ c.appendChild(el('div','pn-empty','Aún no hay partidas.')); return c; }
+    var wrap=el('div','pn-scroll');
+    var tb=document.createElement('table'); tb.className='pn-tbl pn-wide';
+    var hd=document.createElement('tr'); var th0=document.createElement('th'); th0.textContent='Partida'; hd.appendChild(th0);
+    pl.forEach(function(k){ var th=document.createElement('th'); th.className='hm'; th.textContent=keys[k]; hd.appendChild(th); });
+    tb.appendChild(hd);
+    var acc={}; pl.forEach(function(k){ acc[k]={g:[],n:[]}; });
+    codes.forEach(function(cd){
+      var r=m.rondas[cd], tr=document.createElement('tr');
+      var td0=document.createElement('td'); td0.appendChild(document.createTextNode(pnDate(r.f)));
+      td0.appendChild(el('div','pn-mini',r.h+' hoyos'+(r.m==='competencia'?' · competencia':''))); tr.appendChild(td0);
+      pl.forEach(function(k){
+        var e=(byR[cd]||{})[k], td=document.createElement('td'); td.className='hm';
+        if(!e){ td.textContent='·'; td.style.color='#B3AC96'; }
+        else if(!e.complete){ td.textContent=e.played+'/'+e.h; td.style.color='#B3AC96'; }
+        else{
+          var neto=e.hcp!=null?Math.round((e.total-e.hcp)*10)/10:null;
+          td.textContent=e.total+' / '+(neto==null?'–':numShow(neto));
+          acc[k].g.push(e.total*9/e.h); if(neto!=null) acc[k].n.push(neto*9/e.h);
         }
+        tr.appendChild(td);
       });
-      var w=el('div','pn-pl'); var nm=el('div','nm'); var dot=el('i'); dot.style.background=p.color; nm.appendChild(dot); nm.appendChild(document.createTextNode(p.name)); w.appendChild(nm);
-      var any=false;
-      COURSE.tees.forEach(function(t){
-        var a=by[t.id]; if(!a) return; any=true;
-        var row=el('div','dt'); var d2=el('i'); d2.style.cssText='display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;border:1px solid rgba(0,0,0,.3);background:'+t.color;
-        row.appendChild(d2);
-        row.appendChild(document.createTextNode(t.name+' · '+a.length+' vuelta'+(a.length===1?'':'s')+' · promedio '+pnSigned(pnAvg(a))+' · mejor '+pnSigned(Math.min.apply(null,a))));
-        w.appendChild(row);
-      });
-      if(!any) w.appendChild(el('div','dt','Aún no hay vueltas de 9 hoyos completas.'));
-      c.appendChild(w);
+      tb.appendChild(tr);
     });
+    var tr2=document.createElement('tr'); tr2.style.fontWeight='600';
+    var t20=document.createElement('td'); t20.appendChild(document.createTextNode('Prom. por 9')); tr2.appendChild(t20);
+    pl.forEach(function(k){
+      var td=document.createElement('td'); td.className='hm';
+      td.textContent=acc[k].g.length?numShow(Math.round(pnAvg(acc[k].g)*10)/10)+' / '+(acc[k].n.length?numShow(Math.round(pnAvg(acc[k].n)*10)/10):'–'):'–';
+      tr2.appendChild(td);
+    });
+    tb.appendChild(tr2);
+    wrap.appendChild(tb); c.appendChild(wrap);
+    c.appendChild(el('div','pn-s','Cada celda: gross / neto. La última fila es el promedio por cada 9 hoyos de las partidas mostradas.'));
     return c;
   }
 
-  /* --- Resultados de competencias --- */
+  /* --- Pestaña Competencias --- */
   function secCompetencias(m){
     var c=pnCard('Competencias','Partidas jugadas en modo competencia (medalla). Bruto = golpes; neto = golpes menos el handicap. "Dif." = hoyos donde el preliminar no coincidió con lo que anotó el marcador.');
     var byR={};
@@ -2258,7 +2273,29 @@
         cells.forEach(function(t,i){ var td=document.createElement('td'); td.textContent=t; if(i===0&&win) td.style.fontWeight='600'; tr.appendChild(td); });
         tb.appendChild(tr);
       });
-      w.appendChild(tb); c.appendChild(w);
+      w.appendChild(tb);
+      // scores hoyo por hoyo
+      var det=el('div','pn-scroll'); det.hidden=true;
+      var dt=document.createElement('table'); dt.className='pn-tbl pn-wide';
+      var dh=document.createElement('tr'); dh.innerHTML='<th>Hoyo</th><th>Par</th>';
+      r.es.forEach(function(e){ var th=document.createElement('th'); th.className='hm'; th.textContent=e.name; dh.appendChild(th); });
+      dt.appendChild(dh);
+      for(var h=0;h<e0.h;h++){
+        var tr3=document.createElement('tr'), a0=document.createElement('td'), a1=document.createElement('td');
+        a0.textContent=String(h+1); a1.textContent=String(DEF[h%9]); tr3.appendChild(a0); tr3.appendChild(a1);
+        r.es.forEach(function(e){
+          var td=document.createElement('td'); td.className='hm'; var g=e.sc[h];
+          td.textContent=g==null?'–':String(g);
+          if(g!=null){ var d=g-DEF[h%9]; if(d<0) td.style.color='#1F7A4D'; else if(d>=2) td.style.color='#A3241C'; if(d!==0) td.style.fontWeight='600'; }
+          tr3.appendChild(td);
+        });
+        dt.appendChild(tr3);
+      }
+      det.appendChild(dt);
+      var tgl=el('button','pn-toggle','Ver hoyo por hoyo'); tgl.type='button';
+      tgl.addEventListener('click',function(){ det.hidden=!det.hidden; tgl.textContent=det.hidden?'Ver hoyo por hoyo':'Ocultar hoyo por hoyo'; });
+      w.appendChild(tgl); w.appendChild(det);
+      c.appendChild(w);
     });
     c.appendChild(el('div','pn-s','★ mejor bruto · ☆ mejor neto'));
     return c;

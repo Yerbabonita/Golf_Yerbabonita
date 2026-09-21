@@ -230,6 +230,25 @@
   .pn-pl .dt{font-size:11.5px;color:var(--muted);line-height:1.5}
   .pn-round{border-top:1px solid var(--line);padding-top:8px;margin-top:10px}
   .pn-round .rh{display:flex;justify-content:space-between;align-items:baseline;font-size:13px}
+  .ps-head h2{font-family:Georgia,serif;font-weight:400;font-size:24px;color:var(--paper);margin:22px 0 4px}
+  .ps-intro{font-family:var(--num);font-size:12.5px;color:#A9BFAF;line-height:1.45;margin-bottom:10px}
+  .pn-rv{border-top:1px solid var(--line);padding:9px 0 4px}
+  .pn-rv:first-of-type{border-top:none}
+  .pn-rv .rn{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:14px}
+  .pn-rv .rn b{font-family:Georgia,serif;font-weight:400;font-size:17px}
+  .pn-rv .rn span{font-size:11.5px;color:var(--muted)}
+  .pn-wl{display:flex;height:14px;border-radius:2px;overflow:hidden;background:var(--line);margin:5px 0 3px}
+  .pn-wl span{display:block;height:100%}
+  .pn-rv .rc{font-size:12.5px;line-height:1.5}
+  .pn-rv .rc em{font-style:normal;color:var(--muted)}
+  .pn-game{cursor:pointer}
+  .pn-game td:first-child b{font-weight:600;display:block;font-size:13px;line-height:1.25}
+  .pn-game.open td{background:rgba(11,59,37,.06)}
+  .pn-det td{padding:0 !important;border-bottom:1px solid var(--line)}
+  .pn-det table{width:100%;border-collapse:collapse;font-size:12.5px;background:rgba(11,59,37,.04)}
+  .pn-det table td{padding:6px 8px !important;border-bottom:1px dashed var(--line)}
+  .pn-det table tr:last-child td{border-bottom:none}
+  .pn-det .jn small{display:block;color:var(--muted);font-size:10.5px}
   .pn-kpi .pn-sub{display:block;margin-top:3px;font-size:10.5px;line-height:1.3}
   .pn-scroll{overflow-x:auto;margin-top:6px;-webkit-overflow-scrolling:touch}
   .pn-wide{width:auto;min-width:100%}
@@ -1948,8 +1967,9 @@
       c0.appendChild(el('p','','El panel necesita la base de datos (Supabase) configurada en la página.'));
       panelBox.appendChild(c0); return;
     }
-    if(!PN.data){ renderPanelLogin(); return; }
-    renderDashboard();
+    if(!PN.data) renderPanelLogin(); else renderDashboard();
+    var pb=el('div','ps-box'); panelBox.appendChild(pb); PS.box=pb;   // "Mis estadísticas": debajo del PIN, para todos
+    renderPersonal(pb); psFetch(false);
   }
   function renderPanelLogin(msg){
     var c=el('div','card pn-lock');
@@ -1995,19 +2015,20 @@
   /* Modelo: una entrada por jugador y partida guardada */
   function pnModel(d){
     var R={}; (d.rondas||[]).forEach(function(r){ R[r.c]={f:new Date(r.f),m:r.m,h:r.h,t1:r.t1,t2:r.t2}; });
-    var P={}, entries=[];
+    var P={}, entries=[], all=[];
     (d.jugadores||[]).forEach(function(j){
       var r=R[j.c]; if(!r) return;
       var nm=(j.n||'').trim();
-      if(!nm||/^(yo|jug\.?\s*\d*)$/i.test(nm)) return;          // sin nombre real
-      var e={c:j.c,p:j.p,name:nm,key:nm.toLowerCase(),hcp:j.hcp,f:r.f,m:r.m,h:r.h,
+      if(!nm) return;
+      var gen=/^(yo|jug\.?\s*\d*)$/i.test(nm);                    // nombres genéricos: no cuentan en las estadísticas
+      var e={c:j.c,p:j.p,name:nm,ap:(j.a||'').trim()||nm,gen:gen,key:nm.toLowerCase(),hcp:j.hcp,f:r.f,m:r.m,h:r.h,
              tees:[j.t1||r.t1||'blanca', r.h===18?(j.t2||r.t2||j.t1||r.t1||'blanca'):null],
              sc:new Array(r.h).fill(null)};
-      P[j.c+'|'+j.p]=e; entries.push(e);
+      P[j.c+'|'+j.p]=e; all.push(e); if(!gen) entries.push(e);
     });
     (d.scores||[]).forEach(function(x){ var e=P[x.c+'|'+x.p]; if(e&&x.h>=1&&x.h<=e.h) e.sc[x.h-1]=x.g; });
     var dif={}; (d.dif||[]).forEach(function(x){ dif[x.c+'|'+x.p]=x; });
-    entries.forEach(function(e){
+    all.forEach(function(e){
       var tot=0,par=0,n=0;
       e.sc.forEach(function(g,i){ if(g!=null){ tot+=g; par+=DEF[i%9]; n++; } });
       e.total=tot; e.par=par; e.played=n; e.vs=tot-par; e.complete=(n===e.h);
@@ -2025,8 +2046,148 @@
     }).sort(function(a,b){ return b.rounds-a.rounds||a.name.localeCompare(b.name); });
     players.forEach(function(p,i){ p.color=PCOL[i%PCOL.length]; });
     entries.sort(function(a,b){ return a.f-b.f; });
-    return {entries:entries,players:players,rondas:R};
+    all.sort(function(a,b){ return a.p-b.p; });
+    return {entries:entries,all:all,players:players,rondas:R};
   }
+
+  /* ---------- Mis estadísticas (para todos los jugadores, sin PIN) ---------- */
+  var PS={data:null,at:0,busy:false,err:'',box:null};
+  function psFetch(force){
+    if(!LIVE||!prof.locked||!prof.name.trim()||PS.busy) return;
+    if(!force&&PS.data&&Date.now()-PS.at<20000) return;
+    PS.busy=true; PS.err='';
+    rpc('stats_jugador',{p_nombre:prof.name.trim()}).then(function(d){
+      PS.busy=false; PS.at=Date.now();
+      if(d&&!d.error){ PS.data=psModel(d); PS.err=''; } else PS.err='No se pudieron cargar tus estadísticas.';
+      psRender();
+    },function(){ PS.busy=false; PS.err='Sin conexión. Intenta cuando tengas señal.'; psRender(); });
+  }
+  function psRender(){ if(PS.box&&PS.box.isConnected) renderPersonal(PS.box); }
+
+  function psModel(d){
+    var R={};
+    (d.rondas||[]).forEach(function(r){ R[r.c]={c:r.c,f:new Date(r.f),m:r.m,h:r.h,hcp:r.hcp,sc:new Array(r.h).fill(null)}; });
+    (d.scores||[]).forEach(function(x){ var r=R[x.c]; if(r&&x.h>=1&&x.h<=r.h) r.sc[x.h-1]=x.g; });
+    var rounds=Object.keys(R).map(function(k){ return R[k]; }).sort(function(a,b){ return a.f-b.f; });
+    rounds.forEach(function(r){
+      var tot=0,par=0,n=0;
+      r.sc.forEach(function(g,i){ if(g!=null){ tot+=g; par+=DEF[i%9]; n++; } });
+      r.total=tot; r.played=n; r.vs=tot-par; r.complete=(n===r.h);
+      r.neto=(r.complete&&r.hcp!=null)?Math.round((tot-r.hcp)*10)/10:null;
+    });
+    var byRound={};
+    (d.rivales||[]).forEach(function(x){ (byRound[x.c]=byRound[x.c]||[]).push({name:x.n,hcp:x.hcp,tot:x.tot==null?0:+x.tot,cnt:x.cnt||0}); });
+    var grupo={}; (d.grupo||[]).forEach(function(g){ grupo[g.h]=g; });
+    return {nombre:d.nombre||prof.name,rounds:rounds,byRound:byRound,grupo:grupo};
+  }
+
+  function renderPersonal(box){
+    box.innerHTML='';
+    var hd=el('div','ps-head'); hd.appendChild(el('h2','','Mis estadísticas')); box.appendChild(hd);
+    box.appendChild(el('div','ps-intro','Para todos los jugadores, sin PIN. Se calculan con tus partidas guardadas, por tu nombre (no por tu apodo).'));
+    var msg=function(t){ var c=el('div','card pn-card'); c.appendChild(el('div','pn-empty',t)); box.appendChild(c); };
+    if(!prof.locked||!prof.name.trim()){ msg('Confirma tu nombre en Perfil para ver tus estadísticas.'); return; }
+    if(!PS.data){ msg(PS.err||'Cargando tus estadísticas…'); return; }
+    var m=PS.data;
+    if(!m.rounds.length){ msg('Aún no tienes partidas guardadas. Cuando guardes una partida, aquí verás tu desempeño por hoyo y por ronda, y tus rivalidades.'); return; }
+    box.appendChild(psResumen(m)); box.appendChild(psHoyos(m)); box.appendChild(psRondas(m)); box.appendChild(psRivales(m));
+  }
+
+  function psResumen(m){
+    var c=pnCard(m.nombre);
+    var done=m.rounds.filter(function(r){ return r.complete; });
+    var conHcp=done.filter(function(r){ return r.neto!=null; });
+    var gross=pnAvg(done.map(function(r){ return r.total*9/r.h; })), neto=pnAvg(conHcp.map(function(r){ return r.neto*9/r.h; }));
+    var h9=myHcp(9), h18=myHcp(18);
+    var g=el('div','pn-grid');
+    [[String(m.rounds.length),'partidas guardadas',done.length+' completas'],
+     [h9==null&&h18==null?'–':(h9==null?'–':numShow(h9))+' / '+(h18==null?'–':numShow(h18)),'handicap 9 / 18 hoyos',''],
+     [gross==null?'–':pnNum(gross),'gross promedio','por cada 9 hoyos'],
+     [neto==null?'–':pnNum(neto),'neto promedio',neto==null?'sin handicap':'por cada 9 hoyos']
+    ].forEach(function(k){
+      var d=el('div','pn-kpi'); d.appendChild(el('b','',k[0])); d.appendChild(el('span','',k[1]));
+      if(k[2]) d.appendChild(el('span','pn-sub',k[2])); g.appendChild(d);
+    });
+    c.appendChild(g);
+    return c;
+  }
+
+  function psHoyos(m){
+    var c=pnCard('Mi desempeño por hoyo','Tus golpes en cada hoyo. Verde = mejor que el par; en "vs grupo", verde = mejor que el promedio de todos los jugadores. Los hoyos 10 a 18 cuentan con los mismos 9 hoyos del campo.');
+    var a=[]; for(var i=0;i<9;i++) a.push([]);
+    m.rounds.forEach(function(r){ r.sc.forEach(function(g,i){ if(g!=null) a[i%9].push(g); }); });
+    var tb=document.createElement('table'); tb.className='pn-tbl';
+    tb.innerHTML='<tr><th>Hoyo</th><th>Par</th><th class="hm">Promedio</th><th>vs par</th><th class="hm">vs grupo</th><th>Mejor</th><th>Datos</th></tr>';
+    for(var i=0;i<9;i++){
+      var gs=a[i], av=pnAvg(gs), gr=m.grupo[i+1], gav=gr&&gr.avg!=null?+gr.avg:null, tr=document.createElement('tr');
+      var dg=(av!=null&&gav!=null)?av-gav:null;
+      var cells=[String(i+1),String(DEF[i]),av==null?'–':pnNum(av,2),av==null?'–':pnSigned(av-DEF[i],2),dg==null?'–':pnSigned(dg,2),gs.length?String(Math.min.apply(null,gs)):'–',String(gs.length)];
+      cells.forEach(function(t,k){
+        var td=document.createElement('td'); td.textContent=t;
+        if(k===2){ td.className='hm'; if(av!=null) pnHeat(td,av-DEF[i]); }
+        if(k===4){ td.className='hm'; if(dg!=null) pnHeat(td,dg); }
+        tr.appendChild(td);
+      });
+      tb.appendChild(tr);
+    }
+    c.appendChild(tb);
+    return c;
+  }
+
+  function psRondas(m){
+    var c=pnCard('Mi desempeño por ronda','Tus últimas 10 partidas. Puesto: tu lugar entre los jugadores que completaron esa partida (por gross).');
+    var last=m.rounds.slice(-10).reverse();
+    var tb=document.createElement('table'); tb.className='pn-tbl';
+    tb.innerHTML='<tr><th>Partida</th><th>Gross</th><th>vs par</th><th>Neto</th><th>Puesto</th></tr>';
+    last.forEach(function(r){
+      var rivals=(m.byRound[r.c]||[]).filter(function(x){ return x.cnt===r.h; });
+      var puesto='–';
+      if(r.complete&&rivals.length){ var rk=1+rivals.filter(function(x){ return x.tot<r.total; }).length; puesto=rk+'º de '+(rivals.length+1); }
+      var tr=document.createElement('tr');
+      var td0=document.createElement('td'); td0.appendChild(document.createTextNode(pnDate(r.f))); td0.appendChild(el('div','pn-mini',r.h+' hoyos'+(r.m==='competencia'?' · competencia':''))); tr.appendChild(td0);
+      [r.complete?String(r.total):(r.played+'/'+r.h),r.complete?pnSigned(r.vs,0):'–',r.neto==null?'–':numShow(r.neto),puesto].forEach(function(t){ var td=document.createElement('td'); td.textContent=t; tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+    c.appendChild(tb);
+    return c;
+  }
+
+  function psRivales(m){
+    var c=pnCard('Mis rivales más comunes (top 5)','Contra quienes más has jugado y cómo van las rivalidades. W = ganaste, L = perdiste, E = empate. Gana quien hace menos golpes en la misma partida (solo cuentan partidas completas de los dos); el neto solo se compara si ambos tienen handicap.');
+    var rec={};
+    m.rounds.forEach(function(r){
+      (m.byRound[r.c]||[]).forEach(function(x){
+        var k=x.name.toLowerCase(), o=rec[k]||(rec[k]={name:x.name,juntas:0,W:0,L:0,E:0,nW:0,nL:0,nE:0,last:0});
+        o.juntas++; if(+r.f>o.last) o.last=+r.f;
+        if(!r.complete||x.cnt!==r.h) return;
+        if(r.total<x.tot) o.W++; else if(r.total>x.tot) o.L++; else o.E++;
+        if(r.hcp!=null&&x.hcp!=null){
+          var mine=r.total-r.hcp, his=x.tot-x.hcp;
+          if(mine<his) o.nW++; else if(mine>his) o.nL++; else o.nE++;
+        }
+      });
+    });
+    var list=Object.keys(rec).map(function(k){ return rec[k]; })
+      .sort(function(a,b){ return b.juntas-a.juntas||(b.W+b.L+b.E)-(a.W+a.L+a.E)||b.last-a.last||a.name.localeCompare(b.name); }).slice(0,5);
+    if(!list.length){ c.appendChild(el('div','pn-empty','Aún no has jugado con otros jugadores en partidas guardadas.')); return c; }
+    list.forEach(function(o){
+      var w=el('div','pn-rv'), rn=el('div','rn');
+      rn.appendChild(el('b','',o.name)); rn.appendChild(el('span','',o.juntas+' partida'+(o.juntas===1?'':'s')+' juntos'));
+      w.appendChild(rn);
+      var n=o.W+o.L+o.E;
+      if(n){
+        var bar=el('div','pn-wl');
+        [[o.W,'#1F7A4D'],[o.E,'#CFC8B0'],[o.L,'#B23A48']].forEach(function(k){ if(!k[0]) return; var sg=el('span'); sg.style.width=(k[0]/n*100)+'%'; sg.style.background=k[1]; bar.appendChild(sg); });
+        w.appendChild(bar);
+      }
+      var t=el('div','rc'); t.appendChild(document.createTextNode(n?o.W+' W · '+o.L+' L · '+o.E+' E':'Sin partidas completas de los dos para comparar.'));
+      w.appendChild(t);
+      if(o.nW+o.nL+o.nE){ var t2=el('div','rc'); t2.appendChild(el('em','','Neto: ')); t2.appendChild(document.createTextNode(o.nW+' W · '+o.nL+' L · '+o.nE+' E')); w.appendChild(t2); }
+      c.appendChild(w);
+    });
+    return c;
+  }
+
   /* ----- Panel: información global del campo (no por jugador) ----- */
   PN.tab='general';
   function renderDashboard(){
@@ -2190,48 +2351,55 @@
     return c;
   }
 
-  /* --- Últimas 18 partidas: gross y neto de cada jugador --- */
+  /* --- Últimas 18 partidas: J1..J4 y detalle por jugador --- */
+  function pnNetoDe(e){ return (e.complete&&e.hcp!=null)?Math.round((e.total-e.hcp)*10)/10:null; }
   function secUltimas(m){
-    var c=pnCard('Últimas 18 partidas','Score gross / neto de cada jugador en cada partida. Solo se muestran partidas completas del jugador; el neto necesita handicap. Desliza hacia los lados para ver a todos los jugadores.');
+    var c=pnCard('Últimas 18 partidas','Cada fila es una partida, con el nombre formado por los apodos de sus participantes. Las columnas J1 a J4 son los jugadores en el orden en que entraron y cada celda muestra gross / neto. Toca una partida para ver el detalle de cada jugador.');
     var codes=Object.keys(m.rondas).sort(function(a,b){ return m.rondas[b].f-m.rondas[a].f; }).slice(0,18);
-    var byR={}, keys={};
-    m.entries.forEach(function(e){ (byR[e.c]=byR[e.c]||{})[e.key]=e; });
-    codes.forEach(function(cd){ Object.keys(byR[cd]||{}).forEach(function(k){ keys[k]=byR[cd][k].name; }); });
-    var pl=Object.keys(keys).sort(function(a,b){ return keys[a].localeCompare(keys[b]); });
-    if(!codes.length||!pl.length){ c.appendChild(el('div','pn-empty','Aún no hay partidas.')); return c; }
-    var wrap=el('div','pn-scroll');
-    var tb=document.createElement('table'); tb.className='pn-tbl pn-wide';
+    var byR={};
+    m.all.forEach(function(e){ (byR[e.c]=byR[e.c]||[]).push(e); });
+    codes=codes.filter(function(cd){ return byR[cd]&&byR[cd].length; });
+    if(!codes.length){ c.appendChild(el('div','pn-empty','Aún no hay partidas.')); return c; }
+    var nJ=4; codes.forEach(function(cd){ nJ=Math.max(nJ,Math.min(5,byR[cd].length)); });
+    var tb=document.createElement('table'); tb.className='pn-tbl';
     var hd=document.createElement('tr'); var th0=document.createElement('th'); th0.textContent='Partida'; hd.appendChild(th0);
-    pl.forEach(function(k){ var th=document.createElement('th'); th.className='hm'; th.textContent=keys[k]; hd.appendChild(th); });
+    for(var j=1;j<=nJ;j++){ var th=document.createElement('th'); th.className='hm'; th.textContent='J'+j; hd.appendChild(th); }
     tb.appendChild(hd);
-    var acc={}; pl.forEach(function(k){ acc[k]={g:[],n:[]}; });
     codes.forEach(function(cd){
-      var r=m.rondas[cd], tr=document.createElement('tr');
-      var td0=document.createElement('td'); td0.appendChild(document.createTextNode(pnDate(r.f)));
-      td0.appendChild(el('div','pn-mini',r.h+' hoyos'+(r.m==='competencia'?' · competencia':''))); tr.appendChild(td0);
-      pl.forEach(function(k){
-        var e=(byR[cd]||{})[k], td=document.createElement('td'); td.className='hm';
+      var r=m.rondas[cd], es=byR[cd];
+      var tr=document.createElement('tr'); tr.className='pn-game';
+      var td0=document.createElement('td');
+      td0.appendChild(el('b','',es.map(function(e){ return e.ap; }).join(', ')));
+      td0.appendChild(el('div','pn-mini',pnDate(r.f)+' · '+r.h+' hoyos'+(r.m==='competencia'?' · competencia':'')));
+      tr.appendChild(td0);
+      for(var k=0;k<nJ;k++){
+        var e=es[k], td=document.createElement('td'); td.className='hm';
         if(!e){ td.textContent='·'; td.style.color='#B3AC96'; }
         else if(!e.complete){ td.textContent=e.played+'/'+e.h; td.style.color='#B3AC96'; }
-        else{
-          var neto=e.hcp!=null?Math.round((e.total-e.hcp)*10)/10:null;
-          td.textContent=e.total+' / '+(neto==null?'–':numShow(neto));
-          acc[k].g.push(e.total*9/e.h); if(neto!=null) acc[k].n.push(neto*9/e.h);
-        }
+        else{ var nt=pnNetoDe(e); td.textContent=e.total+' / '+(nt==null?'–':numShow(nt)); }
         tr.appendChild(td);
+      }
+      // detalle: una fila por jugador con su gross y su neto
+      var dr=document.createElement('tr'); dr.className='pn-det'; dr.hidden=true;
+      var dd=document.createElement('td'); dd.colSpan=nJ+1;
+      var dt=document.createElement('table');
+      dt.innerHTML='<tr><td class="jn" style="color:#7C7767;font-size:11px">Jugador</td><td style="text-align:right;color:#7C7767;font-size:11px">Gross</td><td style="text-align:right;color:#7C7767;font-size:11px">Neto</td></tr>';
+      es.forEach(function(e,idx){
+        var rw=document.createElement('tr');
+        var a0=document.createElement('td'); a0.className='jn'; a0.appendChild(document.createTextNode('J'+(idx+1)+' · '+e.ap));
+        if(e.ap!==e.name) a0.appendChild(el('small','',e.name));
+        var a1=document.createElement('td'); a1.style.textAlign='right';
+        var a2=document.createElement('td'); a2.style.textAlign='right';
+        if(e.complete){ var nt=pnNetoDe(e); a1.textContent=String(e.total)+' ('+pnSigned(e.vs,0)+')'; a2.textContent=nt==null?'–':numShow(nt); }
+        else{ a1.textContent=e.played+'/'+e.h+' hoyos'; a1.style.color='#B3AC96'; a2.textContent='–'; }
+        rw.appendChild(a0); rw.appendChild(a1); rw.appendChild(a2); dt.appendChild(rw);
       });
-      tb.appendChild(tr);
+      dd.appendChild(dt); dr.appendChild(dd);
+      tr.addEventListener('click',function(){ dr.hidden=!dr.hidden; tr.classList.toggle('open',!dr.hidden); });
+      tb.appendChild(tr); tb.appendChild(dr);
     });
-    var tr2=document.createElement('tr'); tr2.style.fontWeight='600';
-    var t20=document.createElement('td'); t20.appendChild(document.createTextNode('Prom. por 9')); tr2.appendChild(t20);
-    pl.forEach(function(k){
-      var td=document.createElement('td'); td.className='hm';
-      td.textContent=acc[k].g.length?numShow(Math.round(pnAvg(acc[k].g)*10)/10)+' / '+(acc[k].n.length?numShow(Math.round(pnAvg(acc[k].n)*10)/10):'–'):'–';
-      tr2.appendChild(td);
-    });
-    tb.appendChild(tr2);
-    wrap.appendChild(tb); c.appendChild(wrap);
-    c.appendChild(el('div','pn-s','Cada celda: gross / neto. La última fila es el promedio por cada 9 hoyos de las partidas mostradas.'));
+    c.appendChild(tb);
+    c.appendChild(el('div','pn-s','Cada celda: gross / neto. El neto necesita handicap; "5/18" = partida incompleta de ese jugador.'));
     return c;
   }
 

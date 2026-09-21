@@ -173,6 +173,7 @@
   /* ---- Logo ---- */
   .sheet-box .gb{color:var(--ink);justify-content:flex-start;margin:0 0 10px}
   .sheet-box .vdot{border-color:rgba(0,0,0,.35)}
+  .actions button:disabled{opacity:.35;cursor:default}
   .hcpTag:empty{display:none}
   .srow{display:grid;align-items:center;background:#E3DCC5;border-top:1px solid var(--turf);border-bottom:1px solid var(--turf);font-family:var(--num)}
   .srow[hidden]{display:none}
@@ -419,6 +420,7 @@
       i.maxLength=30;
       i.setAttribute('autocomplete','off'); i.setAttribute('autocapitalize','words');
       i.addEventListener('input',function(){
+        p=s.players[j]||p;
         p.n=i.value;
         if(isMe(j,p)){
           prof.name=i.value; saveProf();
@@ -454,6 +456,7 @@
           i.setAttribute('enterkeyhint','next');
           i.addEventListener('focus',function(){ i.select(); });
           i.addEventListener('input',function(){
+            p=s.players[j]||p;
             var v=i.value.replace(/[^0-9]/g,'').slice(0,2);
             if(v==='0') v='';
             if(v!==''&&+v>20) v=v.slice(0,-1);
@@ -493,7 +496,13 @@
 
     var gaps=el('div','gaps'); gaps.id='gaps'; card.appendChild(gaps);
     applyFin();
+    updateButtons();
     paint();
+  }
+  function updateButtons(){
+    var l=document.getElementById('less'), m=document.getElementById('more');
+    if(l) l.disabled=s.players.length<=1;
+    if(m) m.disabled=s.players.length>=MAXP;
   }
   function applyFin(){            // partida guardada por otra persona: la tarjeta queda solo para ver
     var ro=!!(R&&R.fin);
@@ -564,19 +573,22 @@
     var leaders=live.filter(function(t){return t.strokes===min;});
     var rest=live.filter(function(t){return t.strokes>min;})
                  .sort(function(a,b){return a.strokes-b.strokes;});
-    var txt;
-    if(leaders.length>1){
-      txt='Empatados: '+leaders.map(function(t){return '<span class="lead">'+esc(t.name)+'</span>';}).join(' y ');
-    }else{
-      txt='<span class="lead">'+esc(leaders[0].name)+'</span> lidera';
-    }
-    if(rest.length){
-      txt+=' <em>·</em> '+rest.map(function(t){
-        return esc(t.name)+' +'+(t.strokes-min);
-      }).join(' <em>·</em> ');
+    var txt='';
+    if(s.players.length>1){                 // con un solo jugador no hay "líder"
+      if(leaders.length>1){
+        txt='Empatados: '+leaders.map(function(t){return '<span class="lead">'+esc(t.name)+'</span>';}).join(' y ');
+      }else{
+        txt='<span class="lead">'+esc(leaders[0].name)+'</span> lidera';
+      }
+      if(rest.length){
+        txt+=' <em>·</em> '+rest.map(function(t){
+          return esc(t.name)+' +'+(t.strokes-min);
+        }).join(' <em>·</em> ');
+      }
+      txt+='<br>';
     }
     var thru=Math.max.apply(null,played);
-    txt+='<br><em>Van '+thru+' hoyo'+(thru===1?'':'s')+' de '+HOLES+'.</em>';
+    txt+='<em>Van '+thru+' hoyo'+(thru===1?'':'s')+' de '+HOLES+'.</em>';
     var netos=totals.filter(function(t){return t.n===HOLES&&t.hcp!=='';}).map(function(t){
       return esc(t.name)+': <b>'+(t.strokes-parseInt(t.hcp,10))+'</b>';
     });
@@ -683,10 +695,9 @@
       var i=x.hoyo-1; if(i<0||i>=HOLES) return;
       for(var k=0;k<players.length;k++){ if(players[k].pos===x.pos){ players[k].sc[i]=String(x.golpes); break; } }
     });
-    var before=JSON.stringify([R.players,R.cambios,R.game,R.fin]);
-    R.players=players; R.cambios=d.cambios||[];
-    R.fin=d.terminada?{por:d.terminada_por||''}:null;
-    if(JSON.stringify([R.players,R.cambios,R.game,R.fin])===before) return;
+    var cambios=d.cambios||[], fin=d.terminada?{por:d.terminada_por||''}:null;
+    if(JSON.stringify([players,cambios,R.game,fin])===JSON.stringify([R.players,R.cambios,R.game,R.fin])) return;
+    R.players=players; R.cambios=cambios; R.fin=fin;
     store(RKEY,R);
     if(!meP()) rejoin();
     refreshView();
@@ -1001,7 +1012,7 @@
     },function(e){ busy=false; rbMsg(friendly(e)); });
   });
   document.getElementById('less').addEventListener('click',function(){
-    if(s.players.length<=2) return;
+    if(s.players.length<=1) return;
     var last=s.players[s.players.length-1];
     var hasData=last.n||last.sc.some(function(v){return v!=='';});
     if(R){

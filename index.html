@@ -76,7 +76,7 @@
   .gaps em{font-style:normal;color:var(--muted)}
   .gaps .lead{color:var(--under);font-weight:600;font-family:Georgia,serif}
 
-  [data-totals="off"] .sub,[data-totals="off"] .total,[data-totals="off"] .vspar,[data-totals="off"] .gaps{display:none}
+  [data-totals="off"] .sub,[data-totals="off"] .total,[data-totals="off"] .vspar,[data-totals="off"] .gaps,[data-totals="off"] .srow{display:none}
   [data-totals="off"] .row:last-of-type{border-bottom:none}
 
   .actions{display:flex;gap:8px;margin-top:14px}
@@ -174,6 +174,14 @@
   .sheet-box .gb{color:var(--ink);justify-content:flex-start;margin:0 0 10px}
   .sheet-box .vdot{border-color:rgba(0,0,0,.35)}
   .hcpTag:empty{display:none}
+  .srow{display:grid;align-items:center;background:#E3DCC5;border-top:1px solid var(--turf);border-bottom:1px solid var(--turf);font-family:var(--num)}
+  .srow[hidden]{display:none}
+  .srow .cell{padding:6px 2px}
+  .srow .slab{grid-column:1 / span 2;font-size:10.5px;line-height:1.2;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;text-align:center}
+  .s9val{font-size:15px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .s9val span{font-size:12px;margin-left:4px}
+  .hd-row.s9{background:#E3DCC5;font-weight:600;border-top:1px solid var(--turf)}
+  .hd-row.s9 .sl{grid-column:1 / span 2;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
   .brand{display:flex;align-items:center;gap:12px;min-width:0}
   .brand img{width:52px;height:52px;flex:none;display:block}
   /* ---- Guardar partida ---- */
@@ -379,7 +387,7 @@
   function dispName(p,j){ return p.n||(isMe(j,p)?'Yo':'Jug '+(R?p.pos+1:j+1)); }
 
   var card=document.getElementById('card');
-  var nameEls=[], scoreEls=[], parEls=[], hcpEls=[], builtKey='', pendingBuild=false;
+  var nameEls=[], scoreEls=[], parEls=[], hcpEls=[], subRows=[], builtKey='', pendingBuild=false;
 
   function cols(){ return '1.9rem 1.9rem repeat('+s.players.length+',minmax(0,1fr))'; }
   function keyOf(){
@@ -397,7 +405,7 @@
 
   function build(){
     card.innerHTML='';
-    nameEls=[]; scoreEls=[]; parEls=[]; hcpEls=[]; pendingBuild=false; builtKey=keyOf();
+    nameEls=[]; scoreEls=[]; parEls=[]; hcpEls=[]; subRows=[]; pendingBuild=false; builtKey=keyOf();
     var g=cols(), G=gameOf();
 
     var head=el('div','row head'); head.style.gridTemplateColumns=g;
@@ -469,6 +477,15 @@
           r.appendChild(c);
         });
         card.appendChild(r);
+        if(HOLES===18&&(h===8||h===17)){          // suma de cada vuelta (aparece al completar los 9 hoyos)
+          var sr=el('div','srow'); sr.style.gridTemplateColumns=g; sr.hidden=true;
+          var lab=el('div','cell slab'); lab.appendChild(el('span','','Suma')); lab.appendChild(el('span','',(h-7)+'–'+(h+1)));
+          sr.appendChild(lab);
+          var sc9=[];
+          s.players.forEach(function(){ var c9=el('div','cell'); var v9=el('div','s9val'); c9.appendChild(v9); sr.appendChild(c9); sc9.push(v9); });
+          card.appendChild(sr);
+          subRows.push({el:sr,from:h-8,cells:sc9});
+        }
       })(h);
     }
 
@@ -535,6 +552,19 @@
       var box=vr.children[j+2].querySelector('.vsval');
       if(t.n){ var d=fmt(t.vs); box.textContent=d.t; box.className='vsval '+d.c; }
       else{ box.textContent=''; box.className='vsval'; }
+    });
+
+    subRows.forEach(function(sr){
+      var any=false;
+      s.players.forEach(function(p,j){
+        var cell=sr.cells[j]; if(!cell) return;
+        if(!fullNine(p,sr.from)){ cell.innerHTML=''; return; }
+        var sum=0,par=0;
+        for(var h=sr.from;h<sr.from+9;h++){ sum+=parseInt(p.sc[h],10)||0; par+=s.pars[h%9]; }
+        var d=fmt(sum-par); any=true;
+        cell.innerHTML=sum+'<span class="'+d.c+'">'+d.t+'</span>';
+      });
+      sr.el.hidden=!any;
     });
 
     var g=document.getElementById('gaps');
@@ -1043,6 +1073,10 @@
     return {id:uid(),ts:new Date().toISOString(),holes:HOLES,tees:G.tees.slice(),pars:s.pars.slice(),code:R?R.code:null,players:pl};
   }
   function vsTxt(d){ return d===0?'E':(d>0?'+'+d:String(d)); }
+  function fullNine(p,from){          // ¿el jugador completó los 9 hoyos desde 'from'?
+    for(var h=from;h<from+9;h++){ if(p.sc[h]===''||p.sc[h]==null) return false; }
+    return true;
+  }
 
   function abrirGuardar(){
     if(R&&R.fin) return;
@@ -1148,7 +1182,9 @@
     var np=e.players.length, holes=e.holes, pars=e.pars||DEF;
     var W=1080, M=44, rowH=56, band=210, nameH=84, labH=44;
     var hasNeto=e.players.some(function(p){ return p.hcp!==''&&p.played===holes; });
-    var H=band+M+nameH+(holes===18?2:1)*labH+holes*rowH+rowH*2+(hasNeto?rowH:0)+M+56;
+    var sub1=holes===18&&e.players.some(function(p){ return fullNine(p,0); });
+    var sub2=holes===18&&e.players.some(function(p){ return fullNine(p,9); });
+    var H=band+M+nameH+(holes===18?2:1)*labH+holes*rowH+(sub1?rowH:0)+(sub2?rowH:0)+rowH*2+(hasNeto?rowH:0)+M+56;
     var c=document.createElement('canvas'); c.width=W; c.height=H;
     var x=c.getContext('2d');
     var PAPER='#F4F0E2', ALT='#EBE5D2', INK='#1C2B22', MUTE='#7C7767', LINE='#D6CDB4', TURF='#0B3B25';
@@ -1183,6 +1219,24 @@
       x.fillStyle=MUTE; x.font='22px Helvetica, Arial, sans-serif'; x.fillText(t,M+36,y+labH/2+9);
       y+=labH;
     }
+    function drawSub(from){
+      x.fillStyle='#E3DCC5'; x.fillRect(M,y,W-2*M,rowH);
+      x.fillStyle=TURF; x.fillRect(M,y,W-2*M,2); x.fillRect(M,y+rowH-2,W-2*M,2);
+      x.textAlign='center'; x.fillStyle=MUTE; x.font='600 22px Helvetica, Arial, sans-serif';
+      x.fillText('SUMA '+(from+1)+'–'+(from+9),M+(holeW+parW)/2,y+35);
+      e.players.forEach(function(p,j){
+        if(!fullNine(p,from)) return;
+        var sum=0,par=0;
+        for(var k=from;k<from+9;k++){ sum+=+p.sc[k]; par+=pars[k%9]; }
+        var cx=M+holeW+parW+pw*j+pw/2, t1=String(sum), t2=vsTxt(sum-par);
+        x.font='700 34px Helvetica, Arial, sans-serif'; var w1=x.measureText(t1).width;
+        x.font='600 24px Helvetica, Arial, sans-serif'; var w2=x.measureText(t2).width;
+        var sx=cx-(w1+12+w2)/2; x.textAlign='left';
+        x.fillStyle=INK; x.font='700 34px Helvetica, Arial, sans-serif'; x.fillText(t1,sx,y+38);
+        x.fillStyle=sum-par<0?'#1F7A4D':(sum-par>0?'#A3241C':MUTE); x.font='600 24px Helvetica, Arial, sans-serif'; x.fillText(t2,sx+w1+12,y+37);
+      });
+      x.textAlign='center'; y+=rowH;
+    }
     for(var h=0;h<holes;h++){
       if(h===0) label((holes===18?'VUELTA 1 · ':'')+'SALIDA '+tee(e.tees[0]).name.toUpperCase(),e.tees[0]);
       if(h===9) label('VUELTA 2 · SALIDA '+tee(e.tees[1]).name.toUpperCase(),e.tees[1]);
@@ -1200,6 +1254,8 @@
         x.fillText(String(n),cx,y+39);
       });
       y+=rowH;
+      if(h===8&&sub1) drawSub(0);
+      if(h===17&&sub2) drawSub(9);
     }
     // totales
     x.fillStyle=TURF; x.fillRect(M,y,W-2*M,3);
@@ -1323,6 +1379,16 @@
       r.appendChild(el('div','',String(h+1))); r.appendChild(el('div','',String(pars[h%9])));
       e.players.forEach(function(p){ r.appendChild(el('div','',p.sc[h]===''||p.sc[h]==null?'–':String(p.sc[h]))); });
       box.appendChild(r);
+      if(e.holes===18&&(h===8||h===17)&&e.players.some(function(p){ return fullNine(p,h-8); })){
+        var sr=el('div','hd-row s9'); sr.style.gridTemplateColumns=g;
+        sr.appendChild(el('div','sl','Suma '+(h-7)+'–'+(h+1)));
+        e.players.forEach(function(p){
+          var sm=0,pr=0;
+          if(fullNine(p,h-8)){ for(var k=h-8;k<=h;k++){ sm+=+p.sc[k]; pr+=pars[k%9]; } }
+          sr.appendChild(el('div','',fullNine(p,h-8)?sm+' '+vsTxt(sm-pr):''));
+        });
+        box.appendChild(sr);
+      }
     }
     var parTot=0; for(var q=0;q<e.holes;q++) parTot+=pars[q%9];
     var t=el('div','hd-row t'); t.style.gridTemplateColumns=g;

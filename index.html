@@ -175,6 +175,49 @@
   .sheet-box .vdot{border-color:rgba(0,0,0,.35)}
   .actions button:disabled{opacity:.35;cursor:default}
   .hcpTag:empty{display:none}
+  .vrow{display:grid;align-items:center;padding:8px 0 2px}
+  .vrow .vl{grid-column:1 / span 2;padding-left:4px;font-family:var(--num);font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .vrow .vt{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;padding:2px 1px;font-family:var(--num);font-size:10.5px;color:var(--muted);white-space:nowrap}
+  .vrow .vt .vtn{overflow:hidden;text-overflow:ellipsis}
+  .vrow .vt.ed{cursor:pointer;border-radius:3px;background:rgba(11,59,37,.06);border:1px dashed #CFC8B0}
+  .vrow .vt.ed:active{background:rgba(11,59,37,.14)}
+  .hd-lab2{border-bottom:none !important;padding-top:6px}
+  .hd-lab2 .sl{grid-column:1 / span 2;text-align:left;padding-left:2px;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+  .hd-lab2 .vt{display:flex;align-items:center;justify-content:center;gap:4px;font-size:10.5px;color:var(--muted)}
+  .sheet-box .teeopt{display:flex;align-items:center;gap:10px;text-align:left}
+  .sheet-box .teeopt .vdot{width:18px;height:18px;border-color:rgba(0,0,0,.35)}
+  .sheet-box .teeopt small{margin-left:auto;color:var(--muted);font-size:12px}
+  .sheet-box .teeopt.prim small{color:#A9BFAF}
+  #play.comp .actions{display:none}
+  button.savebtn:disabled{opacity:.4}
+  .gb-comp{display:inline-block;padding:2px 9px;border:1px solid var(--gold);border-radius:11px;color:var(--gold);font-size:11.5px;letter-spacing:.03em;text-transform:uppercase}
+  .hcard .gb-comp{color:#8A6D1E;border-color:#C8A951}
+  .sheet-box .gb-comp{color:#8A6D1E;border-color:#C8A951}
+  .su-big small{display:block;font-family:var(--num);font-size:12px;font-weight:400;color:#A9BFAF;margin-top:6px;line-height:1.35}
+  /* ---- Cierre de competencia ---- */
+  .rc-t{font-family:Georgia,serif;font-size:24px;color:var(--paper)}
+  .rc-s{font-family:var(--num);font-size:13px;color:#A9BFAF;margin:4px 0 12px;line-height:1.45}
+  .rcard{margin-bottom:12px;padding:12px 14px;font-family:var(--num)}
+  .rc-name{font-family:Georgia,serif;font-size:19px}
+  .rc-sub{font-size:12px;color:var(--muted);margin:1px 0 6px}
+  .rc-ok{font-size:13.5px;color:#2E7D4F;padding:4px 0}
+  .rc-hole{border-top:1px solid var(--line);padding:10px 0 8px}
+  .rc-h{font-size:13px;color:var(--muted);margin-bottom:6px}
+  .rc-h b{color:var(--ink)}
+  .rc-opts{display:flex;gap:8px;align-items:stretch}
+  .rcard button.rc-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:9px 4px;font-size:12px;color:var(--ink);border:1px solid #CFC8B0;background:transparent}
+  .rcard button.rc-opt b{font-size:22px;font-family:Georgia,serif;font-weight:400}
+  .rcard button.rc-opt.sel{background:var(--turf);color:var(--paper);border-color:var(--turf)}
+  .rcard button.rc-opt:disabled{opacity:.45}
+  .rc-otro{display:flex;flex-direction:column;gap:4px;flex:.9;min-width:0}
+  .rc-otro input{border:1px solid #CFC8B0;border-radius:2px;font-size:16px;height:32px;text-align:center;width:100%}
+  .rcard .rc-otro button{padding:5px 4px;font-size:12px;color:var(--turf);border-color:#CFC8B0}
+  .rc-res{font-size:12px;color:var(--muted);margin-top:6px}
+  .rc-res b{color:var(--ink)}
+  .rc-foot{font-family:var(--num);font-size:13.5px;color:#E0C27A;margin:14px 0 4px;line-height:1.4}
+  .rc-foot.ok{color:#9BD3AE}
+  .rc-acts{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .rc-acts button{display:block;width:100%;flex:none}
   .srow{display:grid;align-items:center;background:#E3DCC5;border-top:1px solid var(--turf);border-bottom:1px solid var(--turf);font-family:var(--num)}
   .srow[hidden]{display:none}
   .srow .cell{padding:6px 2px}
@@ -263,6 +306,7 @@
 <section class="panel" id="tab-tarjeta" role="tabpanel" aria-labelledby="tb-tarjeta" hidden>
 <div class="rb" id="roundbar" hidden></div>
 <div id="setup" hidden></div>
+<div id="recon" hidden></div>
 <div id="play">
   <div class="gb" id="gamebar"></div>
   <div id="playbody">
@@ -340,13 +384,13 @@
   function sum(a){ return a.reduce(function(x,y){return x+(y||0);},0); }
   function teeOfHole(g,h){ return tee(h<9?g.tees[0]:g.tees[1]); }
 
-  function blank(){ return {n:'',hcp:'',sc:new Array(HOLES).fill('')}; }
+  function blank(){ return {n:'',hcp:'',sc:new Array(HOLES).fill(''),tees:null}; }
   function load(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
   function store(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
   function el(t,c,txt){ var e=document.createElement(t); if(c)e.className=c; if(txt!=null)e.textContent=txt; return e; }
   function esc(t){ return String(t).replace(/[<>&]/g,function(c){return {'<':'&lt;','>':'&gt;','&':'&amp;'}[c];}); }
   function hcpNum(v){ return (v===''||v==null)?null:parseInt(v,10); }
-  function fixSc(p){ if(!p.sc||p.sc.length!==HOLES) p.sc=new Array(HOLES).fill(''); if(p.hcp==null) p.hcp=''; }
+  function fixSc(p){ if(!p.sc||p.sc.length!==HOLES) p.sc=new Array(HOLES).fill(''); if(p.hcp==null) p.hcp=''; if(p.tees===undefined) p.tees=null; }
 
   var prof=load(PKEY);
   if(!prof||typeof prof!=='object') prof={name:'',hcp:''};
@@ -366,6 +410,11 @@
     R.online=true;
     if(!R.game||(R.game.holes!==9&&R.game.holes!==18)) R.game={holes:9,tees:['blanca',null]};
     HOLES=R.game.holes; R.players.forEach(fixSc);
+    if(R.game.modo!=='competencia') R.game.modo='amistoso';
+    if(!R.cmy||R.cmy.length!==HOLES) R.cmy=new Array(HOLES).fill('');
+    if(!R.ctg||R.ctg.length!==HOLES) R.ctg=new Array(HOLES).fill('');
+    R.crows=R.crows||[]; R.cres=R.cres||[];
+    R.rev=R.rev||null; R.ini=!!R.ini; R.obj=(R.obj==null?null:R.obj); R.mar=(R.mar==null?null:R.mar);
   }
   var s=R?viewFromRound():local;            // lo que se dibuja ahora
 
@@ -373,7 +422,25 @@
   function saveProf(){ store(PKEY,prof); }
   function save(){ if(R) store(RKEY,R); else store(KEY,local); }
 
+  function blankArr(){ return new Array(HOLES).fill(''); }
+  function isComp(){ return !!(R&&R.game&&R.game.modo==='competencia'); }
+  function phase(){ return !isComp()?'':(R.fin?'fin':(R.rev?'rev':(R.ini?'play':'lobby'))); }   // lobby = esperando jugadores, play = anotando, rev = revisión, fin = guardada
+  function pByPos(pos){
+    for(var i=0;i<R.players.length;i++) if(R.players[i].pos===pos) return R.players[i];
+    return null;
+  }
+  function tagText(p){
+    if(p.kind==='propio') return 'mi preliminar';
+    if(p.kind==='marca') return 'la marcas tú';
+    return (p.hcp!==''&&p.hcp!=null)?'hcp '+p.hcp:'';
+  }
   function viewFromRound(){
+    if(phase()==='play'){                      // competencia: solo veo lo mío y la tarjeta que marco
+      var me0=meP(), tg0=(R.obj!=null)?pByPos(R.obj):null, cv=[];
+      if(me0) cv.push({pos:me0.pos,n:me0.n,hcp:me0.hcp,sc:R.cmy,tees:me0.tees,kind:'propio'});
+      if(tg0) cv.push({pos:tg0.pos,n:tg0.n,hcp:tg0.hcp,sc:R.ctg,tees:tg0.tees,kind:'marca'});
+      if(cv.length) return {pars:DEF.slice(),totals:local.totals,players:cv};
+    }
     var ps=R.players.slice().sort(function(a,b){
       if(a.pos===R.me) return -1;
       if(b.pos===R.me) return 1;
@@ -386,6 +453,21 @@
     return null;
   }
   function isMe(j,p){ return R?p.pos===R.me:j===0; }
+  /* Salida de cada jugador: si no eligió, usa la de la partida */
+  function ptees(p){
+    var G=gameOf(), d=G?G.tees:['blanca',null], t=p&&p.tees;
+    return [(t&&t[0])||d[0]||'blanca', HOLES===18?((t&&t[1])||d[1]||d[0]||'blanca'):null];
+  }
+  function allPlayers(){ return R?R.players:local.players; }
+  function teesVaried(){
+    var G=gameOf(); if(!G) return false;
+    return allPlayers().some(function(p){ var t=ptees(p); return t[0]!==G.tees[0]||(HOLES===18&&t[1]!==G.tees[1]); });
+  }
+  function canEditTee(p){
+    if(R&&R.fin) return false;
+    if(R&&isComp()) return p.pos===R.me;                 // en competencia solo cambio la mía
+    return true;
+  }
   function dispName(p,j){ return p.n||(isMe(j,p)?'Yo':'Jug '+(R?p.pos+1:j+1)); }
 
   var card=document.getElementById('card');
@@ -393,16 +475,53 @@
 
   function cols(){ return '1.9rem 1.9rem repeat('+s.players.length+',minmax(0,1fr))'; }
   function keyOf(){
-    return (R?'r':'l')+HOLES+(gameOf()?gameOf().tees.join('/'):'')+s.players.map(function(p,j){ return R?p.pos:j; }).join(',');
+    return (R?'r'+phase()+(R.obj==null?'':R.obj):'l')+HOLES+(gameOf()?gameOf().tees.join('/'):'')+s.players.map(function(p,j){ return (R?p.pos:j)+(p.tees?':'+p.tees.join('/'):''); }).join(',');
   }
   function isEditing(){ return !!(document.activeElement&&card.contains(document.activeElement)); }
 
-  function vlabel(g,h){
-    var t=teeOfHole(g,h);
-    var d=el('div','vlabel'); var dot=el('span','vdot'); dot.style.background=t.color;
-    d.appendChild(dot);
-    d.appendChild(document.createTextNode((g.holes===18?'Vuelta '+(h<9?1:2)+' · ':'')+'Salida '+t.name));
-    return d;
+  // Fila de salida de una vuelta: cada jugador muestra (y puede cambiar) la suya
+  function vrow(k){
+    var r=el('div','vrow'); r.style.gridTemplateColumns=cols();
+    r.appendChild(el('div','vl',HOLES===18?'Vuelta '+(k+1):'Salida'));
+    s.players.forEach(function(p,j){
+      var t=tee(ptees(p)[k]);
+      var c=el('div','vt'); var dot=el('span','vdot'); dot.style.background=t.color;
+      c.appendChild(dot); c.appendChild(el('span','vtn',t.name));
+      if(canEditTee(p)){
+        c.classList.add('ed'); c.title='Cambiar salida';
+        c.addEventListener('click',function(){ abrirSalida(s.players[j]||p,k); });
+      }
+      r.appendChild(c);
+    });
+    return r;
+  }
+  function abrirSalida(p,k){
+    openSheet(function(box){
+      box.appendChild(el('div','sh-t','Salida de '+(p.n||'este jugador')));
+      box.appendChild(el('div','sh-s',HOLES===18?'Vuelta '+(k+1)+' · hoyos '+(k===0?'1 a 9':'10 a 18'):'Hoyos 1 a 9'));
+      var cur=ptees(p)[k];
+      COURSE.tees.forEach(function(t){
+        var b=el('button','teeopt'+(t.id===cur?' prim':'')); b.type='button';
+        var dot=el('span','vdot'); dot.style.background=t.color;
+        b.appendChild(dot); b.appendChild(el('span','',t.name)); b.appendChild(el('small','',String(sum(t.d))));
+        b.addEventListener('click',function(){ closeSheet(); setTee(p,k,t.id); });
+        box.appendChild(b);
+      });
+      var cn=el('button','','Cancelar'); cn.type='button'; cn.addEventListener('click',closeSheet); box.appendChild(cn);
+    });
+  }
+  function setTee(p,k,id){
+    var t=ptees(p).slice(); t[k]=id;
+    var mine=R?p.pos===R.me:p===local.players[0];
+    if(mine){ teeId=t[0]; try{ localStorage.setItem(TEEKEY,teeId); }catch(e){} }
+    if(R){
+      var rp=pByPos(p.pos); if(rp) rp.tees=[t[0],t[1]];
+      p.tees=[t[0],t[1]];
+      queueOp({t:'salida',pos:p.pos,tees:[t[0],t[1]]});
+      store(RKEY,R); refreshView();
+    }else{
+      p.tees=[t[0],t[1]]; save(); build(); renderGameBar();
+    }
   }
 
   function build(){
@@ -417,7 +536,7 @@
       var i=document.createElement('input');
       i.className='name'; i.value=p.n;
       i.placeholder=isMe(j,p)?'Yo':'Jug '+(R?p.pos+1:j+1);
-      i.maxLength=30;
+      i.maxLength=30; if(p.kind) i.readOnly=true;
       i.setAttribute('autocomplete','off'); i.setAttribute('autocapitalize','words');
       i.addEventListener('input',function(){
         p=s.players[j]||p;
@@ -432,7 +551,7 @@
       });
       nameEls[j]=i;
       var hc=cellWith(i);
-      var tag=el('div','hcpTag',(p.hcp!==''&&p.hcp!=null)?'hcp '+p.hcp:''); hcpEls[j]=tag;
+      var tag=el('div','hcpTag',tagText(p)); hcpEls[j]=tag;
       hc.appendChild(tag);
       head.appendChild(hc);
     });
@@ -440,7 +559,7 @@
 
     for(var h=0;h<HOLES;h++){
       (function(h){
-        if(G&&(h===0||h===9)) card.appendChild(vlabel(G,h));
+        if(G&&(h===0||h===9)) card.appendChild(vrow(h<9?0:1));
         var k=h%9;
         var r=el('div','row'+(s.pars[k]>3?' par4':'')); r.style.gridTemplateColumns=g;
         r.appendChild(cellWith(el('div','hole',String(h+1))));
@@ -461,7 +580,10 @@
             if(v==='0') v='';
             if(v!==''&&+v>20) v=v.slice(0,-1);
             i.value=v; p.sc[h]=v; save();
-            if(R) queueOp({t:'score',pos:p.pos,hoyo:h+1,golpes:v===''?null:+v});
+            if(R){
+              if(p.kind) queueOp({t:'cscore',fuente:p.kind,pos:p.pos,hoyo:h+1,golpes:v===''?null:+v});
+              else queueOp({t:'score',pos:p.pos,hoyo:h+1,golpes:v===''?null:+v});
+            }
             paint();
           });
           (scoreEls[j]=scoreEls[j]||[])[h]=i;
@@ -503,11 +625,15 @@
     var l=document.getElementById('less'), m=document.getElementById('more');
     if(l) l.disabled=s.players.length<=1;
     if(m) m.disabled=s.players.length>=MAXP;
+    var sv=document.getElementById('save');
+    if(sv) sv.textContent=isComp()?'Cerrar y comparar':'Guardar partida';
   }
   function applyFin(){            // partida guardada por otra persona: la tarjeta queda solo para ver
     var ro=!!(R&&R.fin);
+    var waiting=phase()==='play'&&R.obj==null;         // competencia: faltan jugadores con nombre
     playBox.classList.toggle('fin',ro);
-    if(!ro) return;
+    playBox.classList.toggle('comp',isComp()&&!ro);
+    if(!ro&&!waiting) return;
     if(isEditing()&&document.activeElement.blur) document.activeElement.blur();
     Array.prototype.forEach.call(card.querySelectorAll('input'),function(x){ x.readOnly=true; });
   }
@@ -567,6 +693,14 @@
     });
 
     var g=document.getElementById('gaps');
+    if(phase()==='play'){                                   // competencia: nada de líderes, todo es privado
+      var tgp=R.obj!=null?pByPos(R.obj):null, mrp=R.mar!=null?pByPos(R.mar):null;
+      g.innerHTML=!tgp
+        ?'<em>Esperando jugadores. Hacen falta al menos 2 con nombre, y todos deben unirse antes de anotar el primer hoyo.</em>'
+        :'Marcas a <span class="lead">'+esc(tgp.n||'…')+'</span>'+(mrp?' <em>·</em> te marca <b>'+esc(mrp.n||'…')+'</b>':'')+
+         '<br><em>Lo que anotas de cada uno queda oculto hasta el cierre.</em>';
+      return;
+    }
     var live=totals.filter(function(t){return t.n>0;});
     if(live.length<1){ g.innerHTML='<em>Anota el primer hoyo para ver diferencias.</em>'; return; }
     var min=Math.min.apply(null,live.map(function(t){return t.strokes;}));
@@ -617,6 +751,12 @@
     var t=(e&&e.body)||'';
     if(t.indexOf('ronda_llena')>=0) return 'La ronda está llena (5 jugadores).';
     if(t.indexOf('ronda_terminada')>=0) return 'Esa ronda ya fue guardada y no se puede editar.';
+    if(t.indexOf('competencia_iniciada')>=0) return 'La competencia ya empezó: no se pueden agregar ni quitar jugadores.';
+    if(t.indexOf('faltan_jugadores')>=0) return 'Se necesitan al menos 2 jugadores con nombre.';
+    if(t.indexOf('diferencias_pendientes')>=0) return 'Aún hay diferencias sin resolver.';
+    if(t.indexOf('no_autorizado')>=0) return 'Solo el jugador o su marcador pueden corregir ese hoyo.';
+    if(t.indexOf('ronda_en_revision')>=0) return 'La anotación ya se cerró.';
+    if(t.indexOf('no_iniciada')>=0) return 'La competencia todavía no se ha iniciado.';
     if(e&&e.http) return 'No se pudo completar. Intenta de nuevo.';
     return 'Sin conexión. Intenta cuando tengas señal.';
   }
@@ -626,9 +766,11 @@
   var flushing=false;
   function queueOp(op){
     if(!R) return;
-    op.por=editor();
+    op.por=editor(); op.v=R.me;
     R.queue=R.queue.filter(function(o){
       if(op.t==='score') return !(o.t==='score'&&o.pos===op.pos&&o.hoyo===op.hoyo);
+      if(op.t==='cscore') return !(o.t==='cscore'&&o.fuente===op.fuente&&o.pos===op.pos&&o.hoyo===op.hoyo);
+      if(op.t==='salida') return !(o.t==='salida'&&o.pos===op.pos);
       if(op.t==='jug')   return !(o.t==='jug'&&o.pos===op.pos);
       if(op.t==='limpiar') return o.t!=='score';
       if(op.t==='quitar') return o.pos!==op.pos;
@@ -640,6 +782,8 @@
   function sendOp(op){ return sendOpTo(R.code,op); }
   function sendOpTo(c,op){
     if(op.t==='score') return rpc('guardar_score',{p_codigo:c,p_pos:op.pos,p_hoyo:op.hoyo,p_golpes:op.golpes,p_editor:op.por});
+    if(op.t==='cscore')return rpc('guardar_score_comp',{p_codigo:c,p_fuente:op.fuente,p_pos:op.pos,p_hoyo:op.hoyo,p_golpes:op.golpes,p_editor:op.por,p_viewer:op.v});
+    if(op.t==='salida')return rpc('guardar_salida',{p_codigo:c,p_pos:op.pos,p_tee1:op.tees[0],p_tee2:op.tees[1]});
     if(op.t==='jug')   return rpc('guardar_jugador',{p_codigo:c,p_pos:op.pos,p_nombre:op.nombre,p_hcp:op.hcp});
     if(op.t==='quitar')return rpc('quitar_jugador',{p_codigo:c,p_pos:op.pos});
     if(op.t==='limpiar')return rpc('limpiar_ronda',{p_codigo:c,p_editor:op.por});
@@ -655,7 +799,11 @@
       my.queue.shift(); my.online=true; store(RKEY,my); renderStatus(); flush();
     },function(e){
       flushing=false; if(R!==my) return;
-      if(e&&e.http&&e.http>=400&&e.http<500){ my.queue.shift(); store(RKEY,my); flush(); return; } // envío inválido: se descarta
+      if(e&&e.http&&e.http>=400&&e.http<500){                        // envío inválido: se descarta
+        my.queue.shift(); store(RKEY,my);
+        if(op.t==='cscore'){ toast(friendly(e)); setTimeout(poll,150); }   // pudo cambiar la lista o la fase: se actualiza
+        flush(); return;
+      }
       my.online=false; renderStatus();
       setTimeout(flush,5000);
     });
@@ -671,7 +819,7 @@
     if(polling) return;
     polling=true;
     var my=R, started=Date.now();
-    rpc('estado_ronda',{p_codigo:my.code}).then(function(d){
+    rpc('estado_ronda',{p_codigo:my.code,p_viewer:my.me}).then(function(d){
       polling=false; if(R!==my) return;
       my.online=true; renderStatus();
       if(!d){ rbMsg('Esta ronda ya no existe en el servidor.'); return; }
@@ -684,11 +832,13 @@
 
   function applyRemote(d){
     if(d.hoyos===9||d.hoyos===18){
-      R.game={holes:d.hoyos,tees:[d.tee1||'blanca',d.hoyos===18?(d.tee2||d.tee1||'blanca'):null]};
+      R.game={holes:d.hoyos,tees:[d.tee1||'blanca',d.hoyos===18?(d.tee2||d.tee1||'blanca'):null],
+              modo:d.modo==='competencia'?'competencia':'amistoso'};
       HOLES=R.game.holes;
     }
     var players=(d.jugadores||[]).map(function(j){
-      return {pos:j.pos,n:j.nombre||'',hcp:j.hcp==null?'':String(j.hcp),sc:new Array(HOLES).fill('')};
+      return {pos:j.pos,n:j.nombre||'',hcp:j.hcp==null?'':String(j.hcp),sc:new Array(HOLES).fill(''),
+              tees:(j.tee1||j.tee2)?[j.tee1||null,j.tee2||null]:null};
     });
     (d.scores||[]).forEach(function(x){
       if(x.golpes==null) return;
@@ -696,10 +846,34 @@
       for(var k=0;k<players.length;k++){ if(players[k].pos===x.pos){ players[k].sc[i]=String(x.golpes); break; } }
     });
     var cambios=d.cambios||[], fin=d.terminada?{por:d.terminada_por||''}:null;
-    if(JSON.stringify([players,cambios,R.game,fin])===JSON.stringify([R.players,R.cambios,R.game,R.fin])) return;
-    R.players=players; R.cambios=cambios; R.fin=fin;
+    // competencia
+    var rev=(d.revision&&!d.terminada)?{por:d.revision_por||''}:null, ini=!!d.iniciada;
+    var obj=d.objetivo==null?null:d.objetivo, mar=d.marcador==null?null:d.marcador;
+    var cmy=blankArr(), ctg=blankArr(), crows=[], cres=[];
+    if(R.game.modo==='competencia'){
+      var priv=!d.revision&&!d.terminada;
+      (d.comp||[]).forEach(function(x){
+        if(x.golpes==null) return;
+        var i=x.hoyo-1; if(i<0||i>=HOLES) return;
+        if(priv){
+          if(x.fuente==='propio'&&x.pos===R.me) cmy[i]=String(x.golpes);
+          else if(x.fuente==='marca'&&x.pos===obj) ctg[i]=String(x.golpes);
+        }else crows.push({f:x.fuente,p:x.pos,h:x.hoyo,g:x.golpes});
+      });
+      cres=(d.resol||[]).map(function(x){ return {p:x.pos,h:x.hoyo,g:x.golpes,por:x.por||''}; });
+    }
+    var sig=JSON.stringify([players,cambios,R.game,fin,rev,ini,obj,mar,cmy,ctg,crows,cres]);
+    var cur=JSON.stringify([R.players,R.cambios,R.game,R.fin,R.rev||null,!!R.ini,R.obj==null?null:R.obj,R.mar==null?null:R.mar,R.cmy,R.ctg,R.crows||[],R.cres||[]]);
+    if(sig===cur) return;
+    var before=phase();
+    R.players=players; R.cambios=cambios; R.fin=fin; R.rev=rev; R.ini=ini; R.obj=obj; R.mar=mar;
+    R.cmy=cmy; R.ctg=ctg; R.crows=crows; R.cres=cres;
     store(RKEY,R);
     if(!meP()) rejoin();
+    var after=phase();
+    if(before==='lobby'&&after==='play') toast('¡Empezó la competencia! Ya puedes anotar.');
+    else if(before==='play'&&after==='rev') toast('Se cerró la anotación: revisen las diferencias.');
+    else if(before==='rev'&&after==='play') toast('Se reabrió la partida.');
     refreshView();
   }
   function rejoin(){            // alguien me quitó de la ronda: vuelvo a entrar
@@ -715,7 +889,7 @@
     if(isEditing()){
       if(keyOf()===builtKey) syncInPlace(); else pendingBuild=true;
     }else build();
-    applyFin(); renderGameBar(); renderStatus(); renderChanges();
+    applyFin(); renderGameBar(); renderStatus(); renderChanges(); renderRecon();
     var f=!!(R&&R.fin); if(f!==finShown){ finShown=f; renderRoundBar(); }
   }
   var finShown=!!(R&&R.fin);
@@ -723,7 +897,7 @@
     s.players.forEach(function(p,j){
       var ne=nameEls[j];
       if(ne&&ne.value!==p.n) ne.value=p.n;
-      var tg2=hcpEls[j], tt=(p.hcp!==''&&p.hcp!=null)?'hcp '+p.hcp:'';
+      var tg2=hcpEls[j], tt=tagText(p);
       if(tg2&&tg2.textContent!==tt) tg2.textContent=tt;
       for(var h=0;h<HOLES;h++){
         var se=scoreEls[j]&&scoreEls[j][h];
@@ -744,7 +918,7 @@
   }
   function renderChanges(){
     var box=document.getElementById('changes'); if(!box) return;
-    if(!R){ box.hidden=true; return; }
+    if(!R||phase()==='play'){ box.hidden=true; return; }
     box.hidden=false;
     var list=document.getElementById('chlist'); list.innerHTML='';
     if(!R.cambios||!R.cambios.length){ list.appendChild(el('div','ch','Aún no hay cambios.')); return; }
@@ -762,11 +936,13 @@
     var sp=el('span','gb-tee'); var d=el('span','vdot'); d.style.background=tee(id).color;
     sp.appendChild(d); sp.appendChild(document.createTextNode(label)); return sp;
   }
-  function gameSummary(box,g){
+  function gameSummary(box,g,varied){
     box.innerHTML='';
     var l=el('div','gb-l');
+    if(g.modo==='competencia') l.appendChild(el('span','gb-comp','Competencia'));
     l.appendChild(el('span','',g.holes+' hoyos'));
-    if(g.holes===9){ l.appendChild(teeTag(g.tees[0],tee(g.tees[0]).name)); }
+    if(varied){ l.appendChild(el('span','','Cada jugador con su salida')); }
+    else if(g.holes===9){ l.appendChild(teeTag(g.tees[0],tee(g.tees[0]).name)); }
     else{
       l.appendChild(teeTag(g.tees[0],'Vuelta 1 · '+tee(g.tees[0]).name));
       l.appendChild(teeTag(g.tees[1],'Vuelta 2 · '+tee(g.tees[1]).name));
@@ -786,7 +962,7 @@
       bar.appendChild(eb);
     }
     if(g){
-      gameSummary(bar,g);
+      gameSummary(bar,g,teesVaried());
       if(!R){
         var nb=el('button','','Nueva partida'); nb.type='button';
         nb.addEventListener('click',nuevaPartida);
@@ -794,23 +970,37 @@
       }
     }
     buildInfo();
+    syncPanels();
   }
 
   /* ---------- Asistente: ¿9 o 18 hoyos? ¿qué salida? ---------- */
   var setupBox=document.getElementById('setup'), playBox=document.getElementById('play'), setupState=null;
   function openSetup(opts){
-    setupState={holes:null,tees:[],opts:opts};
+    setupState={holes:null,tees:[],modo:opts.askMode?null:'amistoso',opts:opts};
     renderSetup();
     setupBox.hidden=false; playBox.hidden=true; rb.hidden=true;
   }
   function closeSetup(){
-    setupBox.hidden=true; playBox.hidden=false; setupState=null; renderRoundBar();
+    setupBox.hidden=true; playBox.hidden=false; setupState=null; renderRoundBar(); syncPanels();
   }
   function renderSetup(){
     var st=setupState; setupBox.innerHTML='';
     var wrap=el('div','su');
     var nav=el('div','su-nav');
-    if(st.holes==null){
+    if(st.modo==null){
+      wrap.appendChild(el('div','su-t','¿Qué tipo de ronda?'));
+      wrap.appendChild(el('div','su-s','Todos los jugadores usan la misma ronda desde su celular.'));
+      var rowm=el('div','su-row'); rowm.style.flexDirection='column';
+      [['amistoso','Amistosa','Todos anotan en la misma tarjeta y ven todo en vivo.'],
+       ['competencia','Competencia (medalla)','Cada jugador anota su preliminar y marca a otro jugador. Al cerrar se comparan las tarjetas y se corrigen las diferencias.']
+      ].forEach(function(o){
+        var b=el('button','su-big',o[1]); b.type='button';
+        b.appendChild(el('small','',o[2]));
+        b.addEventListener('click',function(){ st.modo=o[0]; renderSetup(); });
+        rowm.appendChild(b);
+      });
+      wrap.appendChild(rowm);
+    }else if(st.holes==null){
       wrap.appendChild(el('div','su-t','¿Cuántos hoyos van a jugar?'));
       wrap.appendChild(el('div','su-s','Los hoyos se numeran del 1 al 9 (o del 1 al 18).'));
       var row=el('div','su-row');
@@ -820,14 +1010,19 @@
         row.appendChild(b);
       });
       wrap.appendChild(row);
+      if(st.opts.askMode){
+        var bk=el('button','','Atrás'); bk.type='button';
+        bk.addEventListener('click',function(){ st.modo=null; renderSetup(); });
+        nav.appendChild(bk);
+      }
     }else{
       var k=st.tees.length;
       if(st.holes===9){
         wrap.appendChild(el('div','su-t','¿Qué color de salida?'));
-        wrap.appendChild(el('div','su-s','Hoyos 1 a 9'));
+        wrap.appendChild(el('div','su-s','Hoyos 1 a 9 · después cada jugador puede cambiar la suya'));
       }else{
         wrap.appendChild(el('div','su-t',k===0?'Vuelta 1: ¿qué color de salida?':'Vuelta 2: ¿qué color de salida?'));
-        wrap.appendChild(el('div','su-s',k===0?'Hoyos 1 a 9':'Hoyos 10 a 18'+(st.tees[0]?' · la vuelta 1 va con '+tee(st.tees[0]).name:'')));
+        wrap.appendChild(el('div','su-s',(k===0?'Hoyos 1 a 9':'Hoyos 10 a 18'+(st.tees[0]?' · la vuelta 1 va con '+tee(st.tees[0]).name:''))+' · después cada jugador puede cambiar la suya'));
       }
       var grid=el('div','tees');
       COURSE.tees.forEach(function(t){
@@ -837,7 +1032,7 @@
         b.addEventListener('click',function(){
           st.tees.push(t.id);
           if(st.tees.length===(st.holes===9?1:2)){
-            var g={holes:st.holes,tees:[st.tees[0],st.holes===18?st.tees[1]:null]};
+            var g={holes:st.holes,tees:[st.tees[0],st.holes===18?st.tees[1]:null],modo:st.modo||'amistoso'};
             var cb=st.opts.onDone; closeSetup(); cb(g);
           }else renderSetup();
         });
@@ -858,7 +1053,7 @@
   }
   function applyGame(g,keep){
     local.game=g; HOLES=g.holes;
-    local.players.forEach(function(p){ if(!(keep&&p.sc&&p.sc.length===HOLES)) p.sc=new Array(HOLES).fill(''); });
+    local.players.forEach(function(p){ p.tees=null; if(!(keep&&p.sc&&p.sc.length===HOLES)) p.sc=new Array(HOLES).fill(''); });
     teeId=g.tees[0]; halfSel=0; try{ localStorage.setItem(TEEKEY,teeId); }catch(e){}
     store(KEY,local);
     local.players[0].n=prof.name; local.players[0].hcp=prof.hcp;
@@ -866,8 +1061,8 @@
   }
   function nuevaPartida(){
     var has=local.players.some(function(p){ return p.sc.some(function(v){return v!=='';}); });
-    if(has&&!confirm('Empezar una partida nueva borra los scores actuales. Los nombres se conservan. ¿Seguro?')) return;
-    openSetup({cancelable:true,onDone:function(g){ applyGame(g,false); }});
+    var go=function(){ openSetup({cancelable:true,onDone:function(g){ applyGame(g,false); }}); };
+    if(has) ask('Nueva partida','Empezar una partida nueva borra los scores actuales. Los nombres se conservan.','Empezar nueva',go); else go();
   }
 
   /* ---------- Barra de ronda compartida ---------- */
@@ -929,7 +1124,7 @@
       if(R.fin){
         rb.appendChild(el('div','rb-fin',(R.fin.por||'Alguien')+' guardó esta partida. Ya no se puede editar.'));
         var gb=el('button','','Guardar en mi historial y salir'); gb.type='button';
-        gb.addEventListener('click',guardarTerminadaYSalir);
+        gb.addEventListener('click',abrirSheetFin);
         rb.appendChild(gb);
       }
     }
@@ -938,12 +1133,13 @@
   }
 
   function enter(code,pos){
-    return rpc('estado_ronda',{p_codigo:code}).then(function(d){
+    return rpc('estado_ronda',{p_codigo:code,p_viewer:pos}).then(function(d){
       if(!d) throw new Error('nada');
       stopPoll();
       var n=(d.hoyos===18)?18:9;
       R={code:code,me:pos,queue:[],players:[],cambios:[],online:true,lastEdit:0,
-         game:{holes:n,tees:[d.tee1||'blanca',n===18?(d.tee2||d.tee1||'blanca'):null]}};
+         game:{holes:n,tees:[d.tee1||'blanca',n===18?(d.tee2||d.tee1||'blanca'):null],modo:d.modo==='competencia'?'competencia':'amistoso'},
+         cmy:new Array(n).fill(''),ctg:new Array(n).fill(''),crows:[],cres:[],rev:null,ini:false,obj:null,mar:null};
       HOLES=n;
       applyRemote(d);
       store(RKEY,R);
@@ -953,12 +1149,12 @@
   }
   function crear(){
     if(busy||!needName()) return;
-    openSetup({cancelable:true,onDone:doCrear});
+    openSetup({cancelable:true,askMode:true,onDone:doCrear});
   }
   function doCrear(g){
     if(busy) return;
     busy=true; rbMsg('Creando ronda…',0);
-    rpc('crear_ronda',{p_nombre:prof.name.trim(),p_hcp:hcpNum(prof.hcp),p_hoyos:g.holes,p_tee1:g.tees[0],p_tee2:g.tees[1]})
+    rpc('crear_ronda',{p_nombre:prof.name.trim(),p_hcp:hcpNum(prof.hcp),p_hoyos:g.holes,p_tee1:g.tees[0],p_tee2:g.tees[1],p_modo:g.modo||'amistoso'})
       .then(function(o){ return enter(o.codigo,o.pos); })
       .then(function(){ busy=false; },function(e){ busy=false; rbMsg(friendly(e)); });
   }
@@ -976,7 +1172,11 @@
   }
   function salir(){
     if(!R) return;
-    if(R.queue.length&&!confirm('Hay scores sin enviar (sin señal). Si sales ahora se pierden. ¿Salir?')) return;
+    if(R.queue.length){ ask('Salir de la ronda','Hay scores sin enviar (sin señal). Si sales ahora se pierden.','Salir igual',doSalir); return; }
+    doSalir();
+  }
+  function doSalir(){
+    if(!R) return;
     stopPoll(); R=null;
     try{ localStorage.removeItem(RKEY); }catch(e){}
     HOLES=local.game?local.game.holes:9;
@@ -1016,24 +1216,27 @@
     var last=s.players[s.players.length-1];
     var hasData=last.n||last.sc.some(function(v){return v!=='';});
     if(R){
-      if(!confirm('Se quita a '+(last.n||'este jugador')+' de la ronda con lo que lleva anotado. ¿Sigo?')) return;
-      R.players=R.players.filter(function(p){ return p!==last; });
-      queueOp({t:'quitar',pos:last.pos}); refreshView();
+      ask('Quitar jugador','Se quita a '+(last.n||'este jugador')+' de la ronda con lo que lleva anotado.','Quitar',function(){
+        R.players=R.players.filter(function(p){ return p!==last; });
+        queueOp({t:'quitar',pos:last.pos}); refreshView();
+      });
       return;
     }
-    if(hasData&&!confirm('Se quita el último jugador con lo que lleva anotado. ¿Sigo?')) return;
-    local.players.pop(); save(); build();
+    var quitar=function(){ local.players.pop(); save(); build(); };
+    if(hasData) ask('Quitar jugador','Se quita el último jugador con lo que lleva anotado.','Quitar',quitar); else quitar();
   });
   document.getElementById('clear').addEventListener('click',function(){
     if(R){
-      if(!confirm('Borra los scores de los '+HOLES+' hoyos para TODOS en la ronda. Los nombres se conservan. ¿Seguro?')) return;
-      R.players.forEach(function(p){ p.sc=new Array(HOLES).fill(''); });
-      queueOp({t:'limpiar'}); refreshView();
+      ask('Limpiar tarjeta','Borra los scores de los '+HOLES+' hoyos para TODOS en la ronda. Los nombres se conservan.','Limpiar',function(){
+        R.players.forEach(function(p){ p.sc=new Array(HOLES).fill(''); });
+        queueOp({t:'limpiar'}); refreshView();
+      });
       return;
     }
-    if(!confirm('Borra los scores de los '+HOLES+' hoyos. Los nombres se conservan.')) return;
-    local.players.forEach(function(p){ p.sc=new Array(HOLES).fill(''); });
-    save(); build();
+    ask('Limpiar tarjeta','Borra los scores de los '+HOLES+' hoyos. Los nombres se conservan.','Limpiar',function(){
+      local.players.forEach(function(p){ p.sc=new Array(HOLES).fill(''); });
+      save(); build();
+    });
   });
 
 
@@ -1051,6 +1254,18 @@
     toastT=setTimeout(function(){ toastEl.hidden=true; },3200);
   }
 
+  // Confirmación dentro de la página (los cuadros del navegador se bloquean en algunos celulares)
+  function ask(title,msg,okText,onOk){
+    openSheet(function(box){
+      box.appendChild(el('div','sh-t',title));
+      box.appendChild(el('div','sh-note',msg));
+      var b1=el('button','prim',okText); b1.type='button';
+      var b2=el('button','','Cancelar'); b2.type='button';
+      b1.addEventListener('click',function(){ closeSheet(); onOk(); });
+      b2.addEventListener('click',closeSheet);
+      box.appendChild(b1); box.appendChild(b2);
+    });
+  }
   var sheet=document.getElementById('sheet');
   function closeSheet(){ sheet.hidden=true; sheet.innerHTML=''; }
   function openSheet(fill){
@@ -1069,9 +1284,9 @@
         if(v){ strokes+=v; par+=s.pars[h%9]; n++; }
       }
       if(!n&&!(p.n||'').trim()) return;                 // lugar vacío
-      pl.push({n:dispName(p,j),hcp:p.hcp==null?'':String(p.hcp),sc:p.sc.slice(),total:strokes,vs:strokes-par,played:n});
+      pl.push({n:dispName(p,j),hcp:p.hcp==null?'':String(p.hcp),sc:p.sc.slice(),tees:ptees(p),total:strokes,vs:strokes-par,played:n});
     });
-    return {id:uid(),ts:new Date().toISOString(),holes:HOLES,tees:G.tees.slice(),pars:s.pars.slice(),code:R?R.code:null,players:pl};
+    return {id:uid(),ts:new Date().toISOString(),holes:HOLES,tees:G.tees.slice(),pars:s.pars.slice(),code:R?R.code:null,modo:isComp()?'competencia':'amistoso',varied:teesVaried(),players:pl};
   }
   function vsTxt(d){ return d===0?'E':(d>0?'+'+d:String(d)); }
   function fullNine(p,from){          // ¿el jugador completó los 9 hoyos desde 'from'?
@@ -1081,11 +1296,12 @@
 
   function abrirGuardar(){
     if(R&&R.fin) return;
+    if(isComp()){ abrirCerrarComp(); return; }
     var snap=snapshot();
     if(!snap.players.some(function(p){return p.played>0;})){ toast('Anota al menos un hoyo antes de guardar.'); return; }
     openSheet(function(box){
       box.appendChild(el('div','sh-t','Guardar partida'));
-      var g=el('div','gb-l'); var gs=el('div','sh-s'); gs.appendChild(gameSummary(el('div','gb'),{holes:snap.holes,tees:snap.tees}));
+      var g=el('div','gb-l'); var gs=el('div','sh-s'); gs.appendChild(gameSummary(el('div','gb'),{holes:snap.holes,tees:snap.tees},snap.varied));
       box.appendChild(gs);
       var list=el('div','sh-list');
       snap.players.slice().sort(function(a,b){ return (b.played>0)-(a.played>0)||a.vs-b.vs; }).forEach(function(p){
@@ -1132,7 +1348,7 @@
       dejarRonda();
     }else{
       if(LIVE) outbox.push({k:'archivar',eid:snap.id,id:snap.id,hoyos:snap.holes,tee1:snap.tees[0],tee2:snap.tees[1],por:por,
-        jug:snap.players.map(function(p){ return {nombre:p.n,hcp:hcpNum(p.hcp),scores:p.sc.map(function(v){return v===''?null:+v;})}; })});
+        jug:snap.players.map(function(p){ return {nombre:p.n,hcp:hcpNum(p.hcp),tee1:p.tees?p.tees[0]:null,tee2:p.tees?p.tees[1]:null,scores:p.sc.map(function(v){return v===''?null:+v;})}; })});
       local.players.forEach(function(p){ p.sc=new Array(HOLES).fill(''); });   // tarjeta limpia
     }
     hist.unshift(snap); if(hist.length>100) hist.length=100;
@@ -1142,14 +1358,223 @@
     drain();
     if(img) compartirImagen(img,snap);
   }
-  function guardarTerminadaYSalir(){
+  function guardarTerminadaYSalir(withImage){
     var snap=snapshot(); snap.cloud='ok';
+    var img=null;
+    if(withImage===true){ try{ img=renderImage(snap); }catch(e){ img=null; } }
+    closeSheet();
     if(!hist.some(function(e){ return snap.code&&e.code===snap.code; })){
       hist.unshift(snap); if(hist.length>100) hist.length=100; store(HKEY,hist);
     }
     dejarRonda(); store(KEY,local);
     s=local; build(); renderRoundBar(); renderChanges(); renderGameBar(); setNote(); renderHist();
     toast('Guardada en tu historial ✓');
+    if(img) compartirImagen(img,snap);
+  }
+  function sheetResultados(box,snap){
+    var gs=el('div','sh-s'); gs.appendChild(gameSummary(el('div','gb'),{holes:snap.holes,tees:snap.tees,modo:snap.modo},snap.varied)); box.appendChild(gs);
+    var list=el('div','sh-list');
+    snap.players.slice().sort(function(a,b){ return (b.played>0)-(a.played>0)||a.vs-b.vs; }).forEach(function(p){
+      var r=el('div','sh-r');
+      var l=el('span'); l.appendChild(document.createTextNode(p.n));
+      if(p.played<snap.holes) l.appendChild(el('em','','  '+p.played+'/'+snap.holes+' hoyos'));
+      var v=el('span'); v.appendChild(el('b','',String(p.total))); v.appendChild(el('em','','  '+(p.played?vsTxt(p.vs):'')));
+      r.appendChild(l); r.appendChild(v); list.appendChild(r);
+    });
+    box.appendChild(list);
+  }
+  // Partida ya guardada en la base de datos (por mí o por otra persona): guardarla también en mi historial
+  function abrirSheetFin(){
+    var snap=snapshot();
+    openSheet(function(box){
+      box.appendChild(el('div','sh-t','Partida guardada'));
+      sheetResultados(box,snap);
+      box.appendChild(el('div','sh-note','Ya quedó en la base de datos. Guárdala también en tu historial; después la tarjeta queda limpia para empezar otra.'));
+      var b1=el('button','prim','Guardar en mi historial y empezar otra'); b1.type='button';
+      var b2=el('button','','Guardar y compartir imagen'); b2.type='button';
+      var b3=el('button','','Cerrar'); b3.type='button';
+      b1.addEventListener('click',function(){ guardarTerminadaYSalir(false); });
+      b2.addEventListener('click',function(){ guardarTerminadaYSalir(true); });
+      b3.addEventListener('click',closeSheet);
+      box.appendChild(b1); box.appendChild(b2); box.appendChild(b3);
+    });
+  }
+
+  /* ---------- Competencia: cerrar, comparar y guardar ---------- */
+  var reconBox=document.getElementById('recon');
+  function syncPanels(){
+    var ph=phase(), rec=(ph==='rev'||ph==='lobby'), inSetup=!!setupState;
+    reconBox.hidden=!rec||inSetup;
+    if(!inSetup) playBox.hidden=rec;
+    if(rec&&document.activeElement&&document.activeElement.blur) document.activeElement.blur();
+  }
+  function abrirCerrarComp(){
+    if(R.obj==null){ toast('Faltan jugadores: se necesitan al menos 2 con nombre.'); return; }
+    openSheet(function(box){
+      box.appendChild(el('div','sh-t','Cerrar y comparar'));
+      box.appendChild(el('div','sh-s','Competencia · medalla'));
+      box.appendChild(el('div','sh-note','Se cierra la anotación para todos y se muestran las tarjetas: el preliminar de cada jugador junto a lo que anotó su marcador. Si hay diferencias, el jugador y su marcador eligen el valor correcto antes de guardar. Si cierras por error, puedes volver a la partida.'));
+      var b1=el('button','prim','Cerrar y comparar'); b1.type='button';
+      var b3=el('button','','Cancelar'); b3.type='button';
+      b1.addEventListener('click',cerrarComparar); b3.addEventListener('click',closeSheet);
+      box.appendChild(b1); box.appendChild(b3);
+    });
+  }
+  function waitQueue(my,cb,tries){
+    if(R!==my) return;
+    if(!my.queue.length){ cb(); return; }
+    if((tries||0)>24){ busy=false; toast('Aún hay anotaciones sin enviar. Revisa tu señal e intenta de nuevo.'); return; }
+    flush(); setTimeout(function(){ waitQueue(my,cb,(tries||0)+1); },500);
+  }
+  function refrescarYAplicar(my){
+    return rpc('estado_ronda',{p_codigo:my.code,p_viewer:my.me}).then(function(d){ if(R===my&&d) applyRemote(d); });
+  }
+  function cerrarComparar(){
+    if(busy||!R) return;
+    busy=true; closeSheet(); var my=R;
+    waitQueue(my,function(){
+      rpc('iniciar_revision',{p_codigo:my.code,p_editor:editor()})
+        .then(function(){ my.lastEdit=Date.now(); return refrescarYAplicar(my); })
+        .then(function(){ busy=false; },function(e){ busy=false; toast(friendly(e)); });
+    });
+  }
+  function reabrir(){
+    if(busy||!R) return;
+    ask('Volver a la partida','Se vuelve a la partida para todos y se borran las decisiones tomadas en la revisión.','Volver',doReabrir);
+  }
+  function doReabrir(){
+    if(busy||!R) return;
+    busy=true; var my=R;
+    rpc('reabrir_ronda',{p_codigo:my.code})
+      .then(function(){ my.lastEdit=Date.now(); return refrescarYAplicar(my); })
+      .then(function(){ busy=false; },function(e){ busy=false; toast(friendly(e)); });
+  }
+  function resolver(pos,hoyo,val){
+    if(busy||!R) return;
+    busy=true; var my=R;
+    rpc('resolver_hoyo',{p_codigo:my.code,p_pos:pos,p_hoyo:hoyo,p_golpes:val,p_editor:editor(),p_viewer:my.me})
+      .then(function(){
+        busy=false; if(R!==my) return;
+        my.lastEdit=Date.now(); setRes(pos,hoyo,val,editor()); store(RKEY,my); renderRecon(true);
+      },function(e){ busy=false; toast(friendly(e)); });
+  }
+  function finalizarCompetencia(){
+    if(busy||!R) return;
+    busy=true; var my=R;
+    rpc('finalizar_competencia',{p_codigo:my.code,p_editor:editor()})
+      .then(function(){ my.lastEdit=Date.now(); return refrescarYAplicar(my); })
+      .then(function(){ busy=false; if(R===my&&R.fin) abrirSheetFin(); },function(e){ busy=false; toast(friendly(e)); });
+  }
+
+  function compArr(pos,f){
+    var a=new Array(HOLES).fill(null);
+    (R.crows||[]).forEach(function(r){ if(r.p===pos&&r.f===f&&r.h>=1&&r.h<=HOLES) a[r.h-1]=r.g; });
+    return a;
+  }
+  function resOf(pos,h){
+    var r=R.cres||[];
+    for(var i=0;i<r.length;i++) if(r[i].p===pos&&r[i].h===h) return r[i];
+    return null;
+  }
+  function setRes(pos,h,g,por){
+    R.cres=(R.cres||[]).filter(function(r){ return !(r.p===pos&&r.h===h); });
+    R.cres.push({p:pos,h:h,g:g,por:por});
+  }
+  function sumArr(a){ var t=0; a.forEach(function(v){ if(v!=null) t+=v; }); return t; }
+  function reconHole(P,M,h,a,b,rs,mine){
+    var box=el('div','rc-hole');
+    box.appendChild(el('div','rc-h','Hoyo '+(h+1)+' · par '+DEF[h%9]));
+    var opts=el('div','rc-opts');
+    function opt(label,val){
+      var bt=el('button','rc-opt'+(rs&&val!=null&&rs.g===val?' sel':'')); bt.type='button';
+      bt.appendChild(el('span','',label)); bt.appendChild(el('b','',val==null?'–':String(val)));
+      bt.disabled=!mine||val==null;
+      bt.addEventListener('click',function(){ resolver(P.pos,h+1,val); });
+      return bt;
+    }
+    opts.appendChild(opt(P.n+' anotó',a));
+    opts.appendChild(opt(M.n+' anotó',b));
+    if(mine){
+      var ot=el('div','rc-otro'), inp=document.createElement('input');
+      inp.inputMode='numeric'; inp.maxLength=2; inp.placeholder='otro';
+      inp.addEventListener('input',function(){
+        var v=inp.value.replace(/[^0-9]/g,'').slice(0,2);
+        if(v==='0') v=''; if(v!==''&&+v>20) v=v.slice(0,-1);
+        inp.value=v;
+      });
+      var ok=el('button','','Usar'); ok.type='button';
+      ok.addEventListener('click',function(){ if(inp.value) resolver(P.pos,h+1,+inp.value); });
+      ot.appendChild(inp); ot.appendChild(ok); opts.appendChild(ot);
+    }
+    box.appendChild(opts);
+    var rr=el('div','rc-res');
+    if(rs){ rr.appendChild(document.createTextNode('Valor correcto: ')); rr.appendChild(el('b','',String(rs.g))); rr.appendChild(document.createTextNode(rs.por?' · elegido por '+rs.por:'')); }
+    else rr.appendChild(document.createTextNode(mine?'Elige el valor correcto.':'Pendiente: lo resuelven '+P.n+' o '+M.n+'.'));
+    box.appendChild(rr);
+    return box;
+  }
+  function iniciarComp(){
+    if(busy||!R) return;
+    busy=true; var my=R;
+    rpc('iniciar_competencia',{p_codigo:my.code})
+      .then(function(){ my.lastEdit=Date.now(); return refrescarYAplicar(my); })
+      .then(function(){ busy=false; },function(e){ busy=false; toast(friendly(e)); });
+  }
+  function renderLobby(){
+    reconBox.innerHTML='';
+    var ord=R.players.filter(function(p){ return (p.n||'').trim()!==''; }).sort(function(a,b){ return a.pos-b.pos; });
+    var n=ord.length;
+    reconBox.appendChild(el('div','rc-t','Competencia · medalla'));
+    reconBox.appendChild(el('div','rc-s','Cada jugador anota su preliminar y marca a otro jugador. Espera a que se unan todos con el código; cuando estén, alguien toca "Iniciar competencia". La lista queda fija y se asignan los marcadores en círculo, según este orden.'));
+    var card=el('div','card rcard');
+    card.appendChild(el('div','rc-name','Jugadores ('+n+')'));
+    if(n<2) card.appendChild(el('div','rc-sub','Se necesitan al menos 2 jugadores con nombre. Comparte el código para que se unan.'));
+    ord.forEach(function(P,i){
+      var row=el('div','rc-hole');
+      var t=el('div','rc-h'); t.appendChild(el('b','',(i+1)+'. '+P.n+(P.pos===R.me?' (tú)':'')));
+      if(n>=2) t.appendChild(document.createTextNode(' → marca a '+ord[(i+1)%n].n));
+      row.appendChild(t); card.appendChild(row);
+    });
+    reconBox.appendChild(card);
+    var acts=el('div','rc-acts');
+    var bs=el('button','savebtn','Iniciar competencia'); bs.type='button'; bs.disabled=n<2; bs.style.marginTop='0';
+    bs.addEventListener('click',iniciarComp);
+    acts.appendChild(bs); reconBox.appendChild(acts);
+  }
+  function renderRecon(force){
+    if(!reconBox) return;
+    if(phase()==='lobby'){ renderLobby(); return; }
+    if(phase()!=='rev'){ reconBox.innerHTML=''; return; }
+    if(!force&&reconBox.contains(document.activeElement)&&document.activeElement.tagName==='INPUT') return;   // no interrumpir si está escribiendo
+    reconBox.innerHTML='';
+    var ord=R.players.filter(function(p){ return (p.n||'').trim()!==''; }).sort(function(a,b){ return a.pos-b.pos; });
+    var n=ord.length, pending=0;
+    reconBox.appendChild(el('div','rc-t','Cierre de la competencia'));
+    reconBox.appendChild(el('div','rc-s',(R.rev.por||'Alguien')+' cerró la anotación. Aquí se compara el preliminar de cada jugador con lo que anotó su marcador. En cada hoyo con diferencia, el jugador o su marcador eligen el valor correcto.'));
+    ord.forEach(function(P,i){
+      var M=ord[(i-1+n)%n], mine=(R.me===P.pos||R.me===M.pos);
+      var pr=compArr(P.pos,'propio'), mk=compArr(P.pos,'marca');
+      var card=el('div','card rcard');
+      card.appendChild(el('div','rc-name',P.n));
+      card.appendChild(el('div','rc-sub','Lo marca '+M.n+' · preliminar '+sumArr(pr)+' · marcador '+sumArr(mk)));
+      var diffs=0;
+      for(var h=0;h<HOLES;h++){
+        var a=pr[h], b=mk[h];
+        if(a===b) continue;
+        diffs++;
+        var rs=resOf(P.pos,h+1); if(!rs) pending++;
+        card.appendChild(reconHole(P,M,h,a,b,rs,mine));
+      }
+      if(!diffs) card.appendChild(el('div','rc-ok','✓ Coinciden todos los hoyos'));
+      reconBox.appendChild(card);
+    });
+    reconBox.appendChild(el('div','rc-foot'+(pending?'':' ok'),pending?'Faltan '+pending+' diferencia'+(pending===1?'':'s')+' por resolver.':'✓ Todo coincide. Listo para guardar.'));
+    var acts=el('div','rc-acts');
+    var bs=el('button','savebtn','Guardar partida'); bs.type='button'; bs.disabled=pending>0; bs.style.marginTop='0';
+    bs.addEventListener('click',finalizarCompetencia);
+    var bv=el('button','','Volver a la partida'); bv.type='button';
+    bv.addEventListener('click',reabrir);
+    acts.appendChild(bs); acts.appendChild(bv); reconBox.appendChild(acts);
   }
   document.getElementById('save').addEventListener('click',abrirGuardar);
 
@@ -1197,7 +1622,7 @@
     x.fillStyle='#A9BFAF'; x.font='30px Helvetica, Arial, sans-serif';
     var d=new Date(e.ts);
     x.fillText(isNaN(d.getTime())?'':d.toLocaleDateString('es',{day:'numeric',month:'long',year:'numeric'}),M+172,138);
-    var cfg=e.holes+' hoyos · '+(e.holes===18?'Vuelta 1 '+tee(e.tees[0]).name+' · Vuelta 2 '+tee(e.tees[1]).name:'Salida '+tee(e.tees[0]).name);
+    var cfg=(e.modo==='competencia'?'Competencia · ':'')+e.holes+' hoyos';
     x.font='26px Helvetica, Arial, sans-serif'; x.fillText(cfg,M+172,176);
 
     var holeW=90, parW=90, pw=(W-2*M-holeW-parW)/np, y=band+M;
@@ -1213,12 +1638,19 @@
     x.fillText('H',M+holeW/2,y+58); x.fillText('Par',M+holeW+parW/2,y+58);
     y+=nameH; x.fillStyle=TURF; x.fillRect(M,y-2,W-2*M,3);
 
-    function label(t,teeId){
-      x.textAlign='left';
-      x.fillStyle=tee(teeId).color; x.beginPath(); x.arc(M+14,y+labH/2+2,9,0,7); x.fill();
-      x.strokeStyle='rgba(0,0,0,.35)'; x.lineWidth=1.5; x.stroke();
-      x.fillStyle=MUTE; x.font='22px Helvetica, Arial, sans-serif'; x.fillText(t,M+36,y+labH/2+9);
-      y+=labH;
+    function label(k){                                   // fila de la vuelta: la salida de cada jugador
+      x.textAlign='left'; x.fillStyle=MUTE; x.font='600 21px Helvetica, Arial, sans-serif';
+      x.fillText(holes===18?'VUELTA '+(k+1):'SALIDA',M+8,y+labH/2+8);
+      e.players.forEach(function(p,j){
+        var t=tee((p.tees&&p.tees[k])||e.tees[k]||e.tees[0]);
+        var cx=M+holeW+parW+pw*j+pw/2;
+        x.font='21px Helvetica, Arial, sans-serif';
+        var w=x.measureText(t.name).width, sx=cx-(w+26)/2;
+        x.fillStyle=t.color; x.beginPath(); x.arc(sx+9,y+labH/2+2,9,0,7); x.fill();
+        x.strokeStyle='rgba(0,0,0,.35)'; x.lineWidth=1.5; x.stroke();
+        x.fillStyle=MUTE; x.textAlign='left'; x.fillText(t.name,sx+26,y+labH/2+9);
+      });
+      x.textAlign='center'; y+=labH;
     }
     function drawSub(from){
       x.fillStyle='#E3DCC5'; x.fillRect(M,y,W-2*M,rowH);
@@ -1239,8 +1671,8 @@
       x.textAlign='center'; y+=rowH;
     }
     for(var h=0;h<holes;h++){
-      if(h===0) label((holes===18?'VUELTA 1 · ':'')+'SALIDA '+tee(e.tees[0]).name.toUpperCase(),e.tees[0]);
-      if(h===9) label('VUELTA 2 · SALIDA '+tee(e.tees[1]).name.toUpperCase(),e.tees[1]);
+      if(h===0) label(0);
+      if(h===9) label(1);
       var par=pars[h%9];
       if(par>3){ x.fillStyle=ALT; x.fillRect(M,y,W-2*M,rowH); }
       x.fillStyle=LINE; x.fillRect(M,y+rowH-1,W-2*M,1);
@@ -1335,7 +1767,7 @@
       var tagTxt=!LIVE||e.cloud==='no'?'Solo en este celular':(e.cloud==='ok'?'☁ En la base de datos':'↻ Pendiente de subir');
       top.appendChild(el('div','hc-tag',tagTxt));
       card.appendChild(top);
-      card.appendChild(gameSummary(el('div','gb'),{holes:e.holes,tees:e.tees}));
+      card.appendChild(gameSummary(el('div','gb'),{holes:e.holes,tees:e.tees,modo:e.modo},e.varied));
       var rank=el('div','hc-rank');
       e.players.slice().sort(function(a,b){ return (b.played>0)-(a.played>0)||a.vs-b.vs; }).forEach(function(p){
         var r=el('div','sh-r');
@@ -1356,8 +1788,9 @@
       });
       bi.addEventListener('click',function(){ try{ compartirImagen(renderImage(e)); }catch(x){ toast('No se pudo crear la imagen.'); } });
       bx.addEventListener('click',function(){
-        if(!confirm('¿Borrar esta partida del historial de este celular? Si ya está en la base de datos, se conserva allá.')) return;
-        hist=hist.filter(function(h){ return h.id!==e.id; }); store(HKEY,hist); renderHist();
+        ask('Borrar partida','Se borra de tu historial. Si ya está en la base de datos, se conserva allá.','Borrar',function(){
+          hist=hist.filter(function(h){ return h.id!==e.id; }); store(HKEY,hist); renderHist();
+        });
       });
       acts.appendChild(bd); acts.appendChild(bi); acts.appendChild(bx);
       card.appendChild(acts); card.appendChild(detail);
@@ -1372,8 +1805,13 @@
     box.appendChild(hd);
     for(var h=0;h<e.holes;h++){
       if(h===0||h===9){
-        var lb=el('div','hd-lab'); var dot=el('span','vdot'); dot.style.background=tee(e.tees[h<9?0:1]).color;
-        lb.appendChild(dot); lb.appendChild(document.createTextNode((e.holes===18?'Vuelta '+(h<9?1:2)+' · ':'')+'Salida '+tee(e.tees[h<9?0:1]).name));
+        var kk=h<9?0:1, lb=el('div','hd-row hd-lab2'); lb.style.gridTemplateColumns=g;
+        lb.appendChild(el('div','sl',e.holes===18?'Vuelta '+(kk+1):'Salida'));
+        e.players.forEach(function(p){
+          var tt=tee((p.tees&&p.tees[kk])||e.tees[kk]||e.tees[0]);
+          var c=el('div','vt'); var dot=el('span','vdot'); dot.style.background=tt.color;
+          c.appendChild(dot); c.appendChild(document.createTextNode(tt.name)); lb.appendChild(c);
+        });
         box.appendChild(lb);
       }
       var r=el('div','hd-row'+(pars[h%9]>3?' p4':'')); r.style.gridTemplateColumns=g;
@@ -1409,7 +1847,7 @@
 
   function buildInfo(){
     var g=gameOf(), ig=document.getElementById('infogame');
-    if(g) gameSummary(ig,g);
+    if(g) gameSummary(ig,g,teesVaried());
     else{ ig.innerHTML=''; ig.appendChild(el('span','','Aún no eliges partida (9 o 18 hoyos). Elígela en la pestaña Tarjeta.')); }
 
     var t=tee(teeId);
@@ -1501,7 +1939,7 @@
 
   /* ---- Arranque ---- */
   renderRoundBar(); renderChanges(); setNote();
-  build(); renderGameBar(); renderHist();
+  build(); renderGameBar(); renderHist(); renderRecon();
   if(R) startPoll();
   drain();
 })();

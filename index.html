@@ -294,6 +294,10 @@
   .tr-badge.prox{background:rgba(200,169,81,.2);color:#8A6D1E}
   .tr-badge.fin{background:rgba(0,0,0,.06);color:var(--muted)}
   .tr-sub{font-family:var(--num);font-size:12px;color:var(--muted);margin-top:3px}
+  .tr-acts{display:flex;gap:8px;margin-top:8px}
+  .tr-acts button{flex:1;padding:8px 4px;font-size:12.5px;color:var(--turf);border-color:#CFC8B0}
+  .tr-acts button.del{color:#9A3B31;border-color:#D9B9B4}
+  .tr-edit{margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
   .su-tr{display:block;width:100%;flex:none;padding:12px 10px;margin-bottom:8px;text-align:left;border-color:#3F614F}
   .su-tr b{display:block;font-family:Georgia,serif;font-weight:400;font-size:17px;color:var(--paper)}
   .su-tr span{display:block;font-family:var(--num);font-size:12px;color:#A9BFAF;margin-top:2px}
@@ -1171,22 +1175,45 @@
         b.addEventListener('click',function(){
           st.modo=o[0]; st.torneo=undefined;
           if(o[0]!=='competencia'||!LIVE){ st.torneo=null; renderSetup(); return; }
-          st.torneoOpts=null; renderSetup();
+          st.torneoOpts=null; st.torneoErr=null; renderSetup();
           rpc('torneo_vigente',{}).then(function(list){
             if(setupState!==st) return;
             list=list||[]; st.torneoOpts=list; if(!list.length) st.torneo=null;
             renderSetup();
-          },function(){ if(setupState!==st) return; st.torneoOpts=[]; st.torneo=null; renderSetup(); });
+          },function(e){
+            if(setupState!==st) return;
+            st.torneoErr=(e&&e.http)?('HTTP '+e.http):'sin conexión';
+            renderSetup();
+          });
         });
         rowm.appendChild(b);
       });
       wrap.appendChild(rowm);
-    }else if(st.modo==='competencia'&&st.torneoOpts===null){
+    }else if(st.modo==='competencia'&&st.torneoOpts===null&&!st.torneoErr){
       wrap.appendChild(el('div','su-t','Buscando torneos…'));
       wrap.appendChild(el('div','su-s','Un momento.'));
       var bk0=el('button','','Atrás'); bk0.type='button';
       bk0.addEventListener('click',function(){ st.modo=null; st.torneoOpts=undefined; st.torneo=undefined; renderSetup(); });
       nav.appendChild(bk0);
+    }else if(st.modo==='competencia'&&st.torneoErr){
+      wrap.appendChild(el('div','su-t','No se pudo buscar torneos'));
+      wrap.appendChild(el('div','su-s','('+st.torneoErr+'). Revisa la conexión, o que supabase.sql esté aplicado en tu proyecto.'));
+      var rt2=el('button','su-tr','Reintentar'); rt2.type='button';
+      rt2.addEventListener('click',function(){
+        st.torneoOpts=null; st.torneoErr=null; renderSetup();
+        rpc('torneo_vigente',{}).then(function(list){
+          if(setupState!==st) return;
+          list=list||[]; st.torneoOpts=list; if(!list.length) st.torneo=null;
+          renderSetup();
+        },function(e){ if(setupState!==st) return; st.torneoErr=(e&&e.http)?('HTTP '+e.http):'sin conexión'; renderSetup(); });
+      });
+      wrap.appendChild(rt2);
+      var sk=el('button','su-tr','Seguir sin torneo'); sk.type='button';
+      sk.addEventListener('click',function(){ st.torneoOpts=[]; st.torneo=null; renderSetup(); });
+      wrap.appendChild(sk);
+      var bk0b=el('button','','Atrás'); bk0b.type='button';
+      bk0b.addEventListener('click',function(){ st.modo=null; st.torneoOpts=undefined; st.torneo=undefined; st.torneoErr=null; renderSetup(); });
+      nav.appendChild(bk0b);
     }else if(st.modo==='competencia'&&st.torneoOpts&&st.torneoOpts.length&&st.torneo===undefined){
       wrap.appendChild(el('div','su-t','¿Unirte a un torneo?'));
       wrap.appendChild(el('div','su-s','Hay un torneo en juego estas fechas. Los jugadores que se unan comparten esta ronda en sus resultados.'));
@@ -2050,18 +2077,70 @@
 
 
   /* ---------- Torneos (dentro de Admin) ---------- */
-  var TR={list:null,busy:false,sel:null,orden:'gross'};
+  var TR={list:null,busy:false,sel:null,orden:'gross',editing:null};
   function trFetch(cb){
     if(!PN.pin||TR.busy) return;
-    TR.busy=true;
+    TR.busy=true; TR.err='';
     rpc('listar_torneos',{p_pin:PN.pin}).then(function(d){
-      TR.busy=false; TR.list=(d&&!d.error)?d:[]; if(cb) cb();
-    },function(){ TR.busy=false; TR.list=TR.list||[]; if(cb) cb(); });
+      TR.busy=false;
+      if(d&&!d.error){ TR.list=d; }
+      else{ TR.list=[]; TR.err=d&&d.error?d.error:'error_desconocido'; }
+      if(cb) cb();
+    },function(e){
+      TR.busy=false; TR.list=[];
+      TR.err=(e&&e.http)?('http_'+e.http+(e.body?': '+String(e.body).slice(0,200):'')):'sin_conexion';
+      if(cb) cb();
+    });
   }
   function trEstado(t){
     var hoy=new Date(); hoy.setHours(0,0,0,0);
     var d=new Date(t.desde+'T00:00:00'), h=new Date(t.hasta+'T00:00:00');
     if(hoy<d) return ['próximo','prox']; if(hoy>h) return ['finalizado','fin']; return ['vigente','vig'];
+  }
+  function trEditForm(t,box){
+    var w=el('div','tr-edit');
+    var fn=el('div','tr-field'); fn.appendChild(el('label','','Nombre del torneo'));
+    var inN=document.createElement('input'); inN.type='text'; inN.maxLength=60; inN.value=t.nombre;
+    fn.appendChild(inN); w.appendChild(fn);
+    var row=el('div','tr-row');
+    var fd=el('div','tr-field'); fd.appendChild(el('label','','Desde'));
+    var inD=document.createElement('input'); inD.type='date'; inD.value=t.desde; fd.appendChild(inD); row.appendChild(fd);
+    var fh=el('div','tr-field'); fh.appendChild(el('label','','Hasta'));
+    var inH=document.createElement('input'); inH.type='date'; inH.value=t.hasta; fh.appendChild(inH); row.appendChild(fh);
+    w.appendChild(row);
+    var er=el('div','pn-err'); w.appendChild(er);
+    var acts=el('div','tr-acts');
+    var sv=el('button','','Guardar cambios'); sv.type='button';
+    sv.addEventListener('click',function(){
+      var nom=inN.value.trim();
+      if(!nom){ er.textContent='Escribe un nombre para el torneo.'; return; }
+      if(!inD.value||!inH.value||inH.value<inD.value){ er.textContent='Revisa las fechas: "Hasta" no puede ser antes de "Desde".'; return; }
+      sv.disabled=true; er.textContent='Guardando…';
+      rpc('editar_torneo',{p_pin:PN.pin,p_codigo:t.codigo,p_nombre:nom,p_desde:inD.value,p_hasta:inH.value}).then(function(d){
+        sv.disabled=false;
+        if(!d||d.error){
+          er.textContent=d&&d.error==='fechas_invalidas'?'Revisa las fechas.':(d&&d.error==='nombre_invalido'?'Escribe un nombre.':(d&&d.error==='pin_incorrecto'?'Tu sesión de administrador expiró. Sal y vuelve a entrar.':'No se pudo guardar ('+(d&&d.error||'error desconocido')+').'));
+          return;
+        }
+        toast('Torneo actualizado ✓'); TR.editing=null; TR.list=null; renderTorneos(box);
+      },function(e){
+        sv.disabled=false;
+        er.textContent=(e&&e.http)?('No se pudo guardar (HTTP '+e.http+').'):'Sin conexión. Intenta cuando tengas señal.';
+      });
+    });
+    var cn=el('button','','Cancelar'); cn.type='button';
+    cn.addEventListener('click',function(){ TR.editing=null; renderTorneos(box); });
+    acts.appendChild(sv); acts.appendChild(cn); w.appendChild(acts);
+    return w;
+  }
+  function trBorrar(t,box){
+    var msg='Se borra el torneo «'+t.nombre+'».'+(t.rondas>0?' Sus '+t.rondas+' ronda'+(t.rondas===1?'':'s')+' se conservan, solo dejan de estar vinculadas a este torneo.':'');
+    ask('Borrar torneo',msg,'Borrar',function(){
+      rpc('eliminar_torneo',{p_pin:PN.pin,p_codigo:t.codigo}).then(function(d){
+        if(!d||d.error){ toast(d&&d.error==='pin_incorrecto'?'Tu sesión de administrador expiró. Sal y vuelve a entrar.':'No se pudo borrar.'); return; }
+        toast('Torneo borrado ✓'); if(TR.sel===t.codigo) TR.sel=null; TR.editing=null; TR.list=null; renderTorneos(box);
+      },function(e){ toast(e&&e.http?('No se pudo borrar (HTTP '+e.http+').'):'Sin conexión. Intenta cuando tengas señal.'); });
+    });
   }
   function trDateStr(iso){ var d=new Date(iso+'T00:00:00'); return isNaN(d.getTime())?iso:pnDate(d); }
   function renderTorneos(box){
@@ -2076,7 +2155,7 @@
     var fh=el('div','tr-field'); fh.appendChild(el('label','','Hasta'));
     var inH=document.createElement('input'); inH.type='date'; fh.appendChild(inH); row.appendChild(fh);
     c.appendChild(row);
-    var today=new Date(); var iso=today.toISOString().slice(0,10); inD.value=iso; inH.value=iso;
+    var today=new Date(); var iso=today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0'); inD.value=iso; inH.value=iso;
     var er=el('div','pn-err'); c.appendChild(er);
     var bt=el('button','pf-btn','Crear torneo'); bt.type='button';
     bt.addEventListener('click',function(){
@@ -2086,10 +2165,16 @@
       bt.disabled=true; er.textContent='Creando…';
       rpc('crear_torneo',{p_pin:PN.pin,p_nombre:nom,p_desde:inD.value,p_hasta:inH.value}).then(function(d){
         bt.disabled=false;
-        if(!d||d.error){ er.textContent=d&&d.error==='fechas_invalidas'?'Revisa las fechas.':(d&&d.error==='nombre_invalido'?'Escribe un nombre.':'No se pudo crear. Intenta de nuevo.'); return; }
+        if(!d||d.error){
+          er.textContent=d&&d.error==='fechas_invalidas'?'Revisa las fechas.':(d&&d.error==='nombre_invalido'?'Escribe un nombre.':(d&&d.error==='pin_incorrecto'?'Tu sesión de administrador expiró. Sal y vuelve a entrar.':'No se pudo crear ('+(d&&d.error||'error desconocido')+').'));
+          return;
+        }
         er.textContent=''; inN.value=''; toast('Torneo «'+d.nombre+'» creado ✓');
         TR.list=null; renderTorneos(box);
-      },function(){ bt.disabled=false; er.textContent='Sin conexión. Intenta cuando tengas señal.'; });
+      },function(e){
+        bt.disabled=false;
+        er.textContent=(e&&e.http)?('No se pudo crear (HTTP '+e.http+'). Revisa que supabase.sql esté aplicado.'):'Sin conexión. Intenta cuando tengas señal.';
+      });
     });
     c.appendChild(bt); box.appendChild(c);
 
@@ -2098,7 +2183,13 @@
       list.appendChild(el('div','pn-empty','Cargando…')); box.appendChild(list);
       trFetch(function(){ renderTorneos(box); }); return;
     }
-    if(!TR.list.length) list.appendChild(el('div','pn-empty','Aún no has creado ningún torneo.'));
+    if(TR.err){
+      var rt=el('button','pn-toggle','Reintentar'); rt.type='button';
+      rt.addEventListener('click',function(){ TR.list=null; renderTorneos(box); });
+      list.appendChild(rt);
+    }
+    if(!TR.list.length&&TR.err) list.appendChild(el('div','pn-empty','No se pudo cargar la lista de torneos ('+TR.err+'). Revisa que el archivo supabase.sql más reciente esté aplicado en tu proyecto de Supabase, y toca «Reintentar».'));
+    else if(!TR.list.length) list.appendChild(el('div','pn-empty','Aún no has creado ningún torneo.'));
     else TR.list.forEach(function(t){
       var est=trEstado(t), it=el('div','tr-item'), h=el('div','tr-h');
       h.appendChild(el('b','',t.nombre));
@@ -2110,6 +2201,13 @@
         vb.addEventListener('click',function(){ TR.sel=t.codigo; TR.orden='gross'; renderTorneos(box); });
         it.appendChild(vb);
       }
+      var acts=el('div','tr-acts');
+      var eb=el('button','','Editar'); eb.type='button';
+      eb.addEventListener('click',function(){ TR.editing=(TR.editing===t.codigo)?null:t.codigo; renderTorneos(box); });
+      var db2=el('button','del','Borrar'); db2.type='button';
+      db2.addEventListener('click',function(){ trBorrar(t,box); });
+      acts.appendChild(eb); acts.appendChild(db2); it.appendChild(acts);
+      if(TR.editing===t.codigo) it.appendChild(trEditForm(t,box));
       list.appendChild(it);
     });
     box.appendChild(list);
